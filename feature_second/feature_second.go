@@ -7,22 +7,37 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
-func CreateSHA256() {
+func LookForPath() {
 	myScanner := bufio.NewScanner(os.Stdin)
 	myScanner.Scan()
-	path := myScanner.Text()
-
-	f, err := os.OpenFile(path, os.O_RDONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
+	commonPath := myScanner.Text()
+	NavigateThroughFolders(commonPath)
+}
+func CreateSHA256(path string) {
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	if _, err := io.Copy(h, strings.NewReader(path)); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%x", h.Sum(nil))
+	fmt.Printf("name file: %s, hash sum: %x\n", path, h.Sum(nil))
+}
+
+func NavigateThroughFolders(commonPath string) {
+	err := filepath.Walk(commonPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		if !info.IsDir() {
+			CreateSHA256(path)
+		}
+		return nil
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
 }
