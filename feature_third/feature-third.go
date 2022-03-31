@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 )
 
 func LookForPath(wg *sync.WaitGroup) {
@@ -45,8 +44,7 @@ func NavigateThroughFolders(commonPath string, wg *sync.WaitGroup) {
 
 		if !info.IsDir() {
 			wg.Add(1)
-			go CreateSHA256(path, wg /*c*/)
-			time.Sleep(1 * time.Second)
+			go CreateSHA256(path, wg)
 		}
 		return nil
 	})
