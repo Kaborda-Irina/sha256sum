@@ -1,10 +1,10 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	internal "github.com/Kaborda-Irina/sha256sum/internal/utils"
+	"log"
 )
 
 var filePath string
@@ -23,7 +23,7 @@ func main() {
 	case len(filePath) > 0:
 		result, err := internal.CreateSha256Sum(filePath)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 		fmt.Println(result)
 
@@ -31,7 +31,7 @@ func main() {
 			for _, nameArg := range flag.Args() {
 				result, err := internal.CreateSha256Sum(nameArg)
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 				fmt.Println(result)
 			}
@@ -39,12 +39,12 @@ func main() {
 	case len(dirPath) > 0:
 		allFilePaths, err := internal.LookForAllFilePath(dirPath)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 		for _, file := range allFilePaths {
 			result, err := internal.CreateSha256Sum(file)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 			}
 			fmt.Println(result)
 		}
@@ -52,19 +52,18 @@ func main() {
 			for _, nameArg := range flag.Args() {
 				allFilePaths, err := internal.LookForAllFilePath(nameArg)
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 				for _, file := range allFilePaths {
 					result, err := internal.CreateSha256Sum(file)
 					if err != nil {
-						fmt.Println(err)
+						log.Println(err)
 					}
 					fmt.Println(result)
 				}
 			}
 		}
 	default:
-		errorCLS := errors.New("Use the -d flag on the command line to find hash sum files or directories")
-		fmt.Println(errorCLS)
+		fmt.Println("Use the -d flag on the command line to find hash sum files or directories")
 	}
 }
