@@ -5,47 +5,66 @@ import (
 	"flag"
 	"fmt"
 	internal "github.com/Kaborda-Irina/sha256sum/internal/utils"
-	"strings"
 )
 
-var filePath = flag.String("long path", "", "file path")
-var dirPath = flag.String("long dir", "", "dir path")
+var filePath string
+var dirPath string
 
 func init() {
-	flag.StringVar(filePath, "f", "", "file path")
-	flag.StringVar(dirPath, "d", "", "dir path")
+	//initializes the binding of the flag to a variable that must run before the main() function
+	flag.StringVar(&filePath, "f", "", "file path")
+	flag.StringVar(&dirPath, "d", "", "dir path")
 }
 
 func main() {
 	flag.Parse()
 
 	switch {
-	case len(*filePath) > 0:
-		if strings.Contains(*filePath, ",") {
-			filePaths := strings.Split(*filePath, ",")
-			for _, fPath := range filePaths {
-				fmt.Println(internal.CreateSha256Sum(fPath))
-			}
-		} else {
-			fmt.Println(internal.CreateSha256Sum(*filePath))
+	case len(filePath) > 0:
+		result, err := internal.CreateSha256Sum(filePath)
+		if err != nil {
+			fmt.Println(err)
 		}
-	case len(*dirPath) > 0:
-		if strings.Contains(*dirPath, ",") {
-			disPaths := strings.Split(*dirPath, ",")
-			for _, dPath := range disPaths {
-				allFilePaths := internal.LookForAllFilePath(dPath)
-				for _, file := range allFilePaths {
-					fmt.Println(internal.CreateSha256Sum(file))
+		fmt.Println(result)
+
+		if len(flag.Args()) > 0 {
+			for _, nameArg := range flag.Args() {
+				result, err := internal.CreateSha256Sum(nameArg)
+				if err != nil {
+					fmt.Println(err)
 				}
+				fmt.Println(result)
 			}
-		} else {
-			allFilePaths := internal.LookForAllFilePath(*dirPath)
-			for _, file := range allFilePaths {
-				fmt.Println(internal.CreateSha256Sum(file))
+		}
+	case len(dirPath) > 0:
+		allFilePaths, err := internal.LookForAllFilePath(dirPath)
+		if err != nil {
+			fmt.Println(err)
+		}
+		for _, file := range allFilePaths {
+			result, err := internal.CreateSha256Sum(file)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(result)
+		}
+		if len(flag.Args()) > 0 {
+			for _, nameArg := range flag.Args() {
+				allFilePaths, err := internal.LookForAllFilePath(nameArg)
+				if err != nil {
+					fmt.Println(err)
+				}
+				for _, file := range allFilePaths {
+					result, err := internal.CreateSha256Sum(file)
+					if err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println(result)
+				}
 			}
 		}
 	default:
-		err := errors.New("error in command line, need to write file path or dir")
-		internal.ErrorProcessing(err)
+		errorCLS := errors.New("Use the -d flag on the command line to find hash sum files or directories")
+		fmt.Println(errorCLS)
 	}
 }
