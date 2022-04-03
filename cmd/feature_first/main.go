@@ -4,34 +4,31 @@ import (
 	"flag"
 	"fmt"
 	internal "github.com/Kaborda-Irina/sha256sum/internal/utils"
-	"log"
-	"strings"
 )
 
-var filePath = flag.String("long path", "", "file path")
+var filePath string
 
 func init() {
-	flag.StringVar(filePath, "f", "", "file path")
+	//initializes the binding of the flag to a variable that must run before the main() function
+	flag.StringVar(&filePath, "f", "", "file path")
 }
 
 func main() {
 	flag.Parse()
+	result, err := internal.CreateSha256Sum(filePath)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(result)
 
-	switch {
-	case len(*filePath) > 0:
-		if strings.Contains(*filePath, ",") {
-			filePaths := strings.Split(*filePath, ",")
-			for _, fPath := range filePaths {
-				result := internal.CreateSha256Sum(fPath)
-				fmt.Println(result)
+	if len(flag.Args()) > 0 {
+		for _, nameArg := range flag.Args() {
+			result, err := internal.CreateSha256Sum(nameArg)
+			if err != nil {
+				fmt.Println(err)
 			}
-		} else {
-			result := internal.CreateSha256Sum(*filePath)
 			fmt.Println(result)
 		}
-	default:
-		log.Println("error in command line, need write file path")
-
 	}
 
 }
