@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -13,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 func CreateHash(path string, alg string) string {
@@ -88,9 +90,10 @@ func Worker(wg *sync.WaitGroup, algorithm string, jobs <-chan string, results ch
 	for j := range jobs {
 		results <- CreateHash(j, algorithm)
 	}
+
 }
 
-func Result(results chan string) {
+func Result(ctx context.Context, results chan string, c chan os.Signal) {
 
 	for {
 		select {
@@ -98,7 +101,13 @@ func Result(results chan string) {
 			if !ok {
 				return
 			}
+			time.Sleep(500 * time.Millisecond)
 			fmt.Println(hash)
+		case <-c:
+			fmt.Println(" exit program")
+			return
+		case <-ctx.Done():
 		}
 	}
+
 }

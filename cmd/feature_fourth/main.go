@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/Kaborda-Irina/sha256sum/internal/utils"
 	"os"
+	"os/signal"
 	"sync"
 	"time"
 )
@@ -38,6 +40,16 @@ func main() {
 		jobs := make(chan string)
 		results := make(chan string)
 
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+
+		defer func() {
+			signal.Stop(c)
+			cancel()
+		}()
+
 		go func() {
 			var wg sync.WaitGroup
 			for w := 1; w <= countWorkers; w++ {
@@ -49,7 +61,8 @@ func main() {
 		}()
 
 		go utils.SearchFilePath(dirPath, jobs)
-		utils.Result(results)
+
+		utils.Result(ctx, results, c)
 
 		elapsed := time.Since(start)
 		fmt.Printf("Took ===============> %s\n", elapsed)
