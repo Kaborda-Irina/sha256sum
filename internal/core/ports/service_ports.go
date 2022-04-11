@@ -8,4 +8,5 @@ import (
 type IHashService interface {
 	Ping(_ context.Context) error
 	SaveHashSum(hashSum models.HashSum, ctx context.Context) error
+	GetHashSum(filePath string, ctx context.Context) (models.HashSumFromDB, error)
 }

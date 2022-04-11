@@ -56,7 +56,7 @@ func Worker(ctx context.Context, wg *sync.WaitGroup, algorithm string, jobs <-ch
 		results <- hashSum
 		err := service.SaveHashSum(hashSum, ctx)
 		if err != nil {
-			log.Println("error while save hash in db")
+			log.Println("error while save hash in db", err)
 		}
 	}
 
@@ -112,6 +112,7 @@ func CreateHash(path string, alg string) models.HashSum {
 	}
 
 	outputHashSum.FileName = filepath.Base(path)
+	outputHashSum.FullFilePath = path
 	return outputHashSum
 }
 
@@ -133,4 +134,60 @@ func Result(ctx context.Context, results chan models.HashSum, c chan os.Signal) 
 		}
 	}
 
+}
+
+func WorkerPoolForCheck(ctx context.Context, countWorkers int, algorithm string, jobs chan string, results chan models.HashSum) {
+	var wg sync.WaitGroup
+	for w := 1; w <= countWorkers; w++ {
+		wg.Add(1)
+		go WorkerForCheck(&wg, algorithm, jobs, results)
+	}
+	defer close(results)
+	wg.Wait()
+}
+
+func WorkerForCheck(wg *sync.WaitGroup, algorithm string, jobs <-chan string, results chan<- models.HashSum) {
+	defer wg.Done()
+	for j := range jobs {
+		hashSum := CreateHash(j, algorithm)
+		results <- hashSum
+	}
+}
+
+func ResultForCheck(ctx context.Context, results chan models.HashSum, c chan os.Signal, service ports.IHashService) {
+
+	for {
+		select {
+		case outputHashSum, ok := <-results:
+			if !ok {
+				return
+			}
+			//time.Sleep(500 * time.Millisecond)
+			hashSumFromDB, err := service.GetHashSum(outputHashSum.FullFilePath, ctx)
+			if err != nil {
+				fmt.Println("Error getting hash from database ")
+			}
+			allFileChange := matchHashSum(outputHashSum, hashSumFromDB)
+			if len(allFileChange) > 0 {
+				for _, oneChange := range allFileChange {
+					fmt.Printf("Changes were made to the file - %v located along the path %v\n", oneChange.FileName, oneChange.FullFilePath)
+				}
+			} else {
+				fmt.Printf("All files are not change\n")
+			}
+		case <-c:
+			fmt.Println("exit program")
+			return
+		case <-ctx.Done():
+		}
+	}
+
+}
+func matchHashSum(outputHashSum models.HashSum, hashSumFromDB models.HashSumFromDB) []models.HashSum {
+	hashSumCurrent := fmt.Sprintf("%x", outputHashSum.Hash)
+	var result []models.HashSum
+	if hashSumCurrent != hashSumFromDB.Hash {
+		result = append(result, outputHashSum)
+	}
+	return result
 }

@@ -18,7 +18,7 @@ func NewHashService(hashRepository ports.IHashRepository) ports.IHashService {
 }
 
 func (hs HashService) Ping(_ context.Context) error {
-	log.Println("start service was initialized")
+	log.Println("hash service was initialized")
 	return nil
 }
 
@@ -28,4 +28,13 @@ func (hs HashService) SaveHashSum(hashSum models.HashSum, ctx context.Context) e
 		return err
 	}
 	return nil
+}
+
+func (hs HashService) GetHashSum(filePath string, ctx context.Context) (models.HashSumFromDB, error) {
+	hash, err := hs.hashRepository.GetHashSum(filePath, ctx)
+	if err != nil {
+		log.Printf("hash service didn't get hash sum %s", err)
+		return models.HashSumFromDB{}, err
+	}
+	return hash, nil
 }

@@ -16,7 +16,7 @@ import (
 
 const countWorkers = 4
 
-func Initialize(ctx context.Context, cfg config.Config, doHelp bool, dirPath string, algorithm string) {
+func Initialize(ctx context.Context, cfg config.Config, doHelp bool, dirPath string, algorithm string, checkHashSumFile string) {
 	// Initialize PostgreSQL
 	log.Println("Starting postgres connection")
 	postgres, err := postrges.Initialize(cfg)
@@ -31,17 +31,16 @@ func Initialize(ctx context.Context, cfg config.Config, doHelp bool, dirPath str
 	// Initialize service
 	service := services.NewHashService(repository)
 
+	jobs := make(chan string)
+	results := make(chan models.HashSum)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
 	switch {
 	//Initialize custom -h flag
 	case doHelp:
 		customHelpFlag()
 	//Initialize custom -d flag
 	case len(dirPath) > 0:
-		jobs := make(chan string)
-		results := make(chan models.HashSum)
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-
 		ctx, cancel := context.WithCancel(ctx)
 		defer func() {
 			signal.Stop(c)
@@ -52,6 +51,18 @@ func Initialize(ctx context.Context, cfg config.Config, doHelp bool, dirPath str
 		go services.SearchFilePath(dirPath, jobs)
 		services.Result(ctx, results, c)
 
+	//Initialize custom -c flag
+	case len(checkHashSumFile) > 0:
+		ctx, cancel := context.WithCancel(ctx)
+		defer func() {
+			signal.Stop(c)
+			cancel()
+		}()
+
+		go services.WorkerPoolForCheck(ctx, countWorkers, algorithm, jobs, results)
+		go services.SearchFilePath(checkHashSumFile, jobs)
+		services.ResultForCheck(ctx, results, c, service)
+		//
 	//If the user has not entered a flag
 	default:
 		fmt.Println("use the -h flag on the command line to see all the flags in this app")
