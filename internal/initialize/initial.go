@@ -17,11 +17,12 @@ import (
 const countWorkers = 4
 
 func Initialize(ctx context.Context, cfg config.Config, doHelp bool, dirPath string, algorithm string, checkHashSumFile string) {
+
 	// Initialize PostgreSQL
 	log.Println("Starting postgres connection")
 	postgres, err := postrges.Initialize(cfg)
 	if err != nil {
-		log.Println("Failed to connection to Postgres")
+		log.Println("Failed to connection to Postgres", err)
 	}
 	log.Println("Postgres connection is successful")
 
@@ -32,37 +33,31 @@ func Initialize(ctx context.Context, cfg config.Config, doHelp bool, dirPath str
 	service := services.NewHashService(repository)
 
 	jobs := make(chan string)
-	results := make(chan models.HashSum)
+	results := make(chan models.HashData)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
+	ctx, cancel := context.WithCancel(ctx)
+	defer func() {
+		signal.Stop(c)
+		cancel()
+	}()
+
 	switch {
 	//Initialize custom -h flag
 	case doHelp:
 		customHelpFlag()
 	//Initialize custom -d flag
 	case len(dirPath) > 0:
-		ctx, cancel := context.WithCancel(ctx)
-		defer func() {
-			signal.Stop(c)
-			cancel()
-		}()
-
-		go services.WorkerPool(ctx, countWorkers, algorithm, jobs, results, service)
-		go services.SearchFilePath(dirPath, jobs)
-		services.Result(ctx, results, c)
+		go services.WorkerPool(ctx, countWorkers, algorithm, jobs, results)
+		go services.SearchFilePath(ctx, dirPath, jobs)
+		services.Result(ctx, results, c, service)
 
 	//Initialize custom -c flag
 	case len(checkHashSumFile) > 0:
-		ctx, cancel := context.WithCancel(ctx)
-		defer func() {
-			signal.Stop(c)
-			cancel()
-		}()
-
-		go services.WorkerPoolForCheck(ctx, countWorkers, algorithm, jobs, results)
-		go services.SearchFilePath(checkHashSumFile, jobs)
+		go services.WorkerPool(ctx, countWorkers, algorithm, jobs, results)
+		go services.SearchFilePath(ctx, checkHashSumFile, jobs)
 		services.ResultForCheck(ctx, results, c, service)
-		//
+
 	//If the user has not entered a flag
 	default:
 		fmt.Println("use the -h flag on the command line to see all the flags in this app")

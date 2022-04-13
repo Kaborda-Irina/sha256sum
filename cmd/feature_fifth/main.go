@@ -17,7 +17,7 @@ var checkHashSumFile string
 func init() {
 	flag.StringVar(&dirPath, "d", "", "directory path")
 	flag.BoolVar(&doHelp, "h", false, "help")
-	flag.StringVar(&algorithm, "a", "", "algorithm md5, 1, 224, 256, 384, 512")
+	flag.StringVar(&algorithm, "a", "", "algorithm MD5, SHA1, SHA224, SHA256, SHA384, SHA512")
 	flag.StringVar(&checkHashSumFile, "c", "", "check hash sum files in directory")
 }
 
@@ -27,9 +27,8 @@ func main() {
 	//Initialize config
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal("Error during loading from config file")
+		log.Fatal("Error during loading from config file", err)
 	}
 	ctx := context.Background()
 	initialize.Initialize(ctx, cfg, doHelp, dirPath, algorithm, checkHashSumFile)
-
 }

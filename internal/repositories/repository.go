@@ -6,6 +6,7 @@ import (
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/jmoiron/sqlx"
 	"log"
+	"time"
 )
 
 const nameTable = "hashFiles"
@@ -20,43 +21,36 @@ func NewHashRepository(db *sqlx.DB) *HashRepository {
 	}
 }
 
-func (hr HashRepository) Ping(_ context.Context) error {
-	log.Println("hash repository was initialized")
-	return hr.db.Ping()
-}
+//SaveHashSum saves the data to the database and overwrites it if necessary
+func (hr HashRepository) SaveHashSum(ctx context.Context, inputHashSum models.HashData) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-func (hr HashRepository) SaveHashSum(inputHashSum models.HashSum, ctx context.Context) error {
-	query := fmt.Sprintf(`
-		INSERT INTO %s (fileName,fullFilePath,hashSum, algorithm) 
-		VALUES ($1,$2,$3,$4) 
-		ON CONFLICT (fullFilePath) DO UPDATE 
-		SET fileName=EXCLUDED.fileName, fullFilePath=EXCLUDED.fullFilePath, hashSum=EXCLUDED.hashSum, algorithm= EXCLUDED.algorithm;
-	`, nameTable)
-
-	//INSERT INTO table (id, field, field2)
-	//       SELECT 3, 'C', 'Z'WHERE NOT EXISTS (SELECT 1 FROM table WHERE id=3);
+	query := fmt.Sprintf(`SELECT checkHashSum($1, $2, $3, $4);`)
 	hash := fmt.Sprintf("%x", inputHashSum.Hash)
 	_, err := hr.db.Exec(query, inputHashSum.FileName, inputHashSum.FullFilePath, hash, inputHashSum.Algorithm)
-
 	if err != nil {
 		return err
 	}
-	log.Println("Hash sum successfully written to the database")
+
 	return nil
 }
 
-func (hr HashRepository) GetHashSum(filePath string, ctx context.Context) (models.HashSumFromDB, error) {
-	query := fmt.Sprintf("SELECT id,fileName,fullFilePath,hashSum,algorithm FROM %s WHERE fullFilePath=$1", nameTable)
-	row := hr.db.QueryRow(query, filePath)
+//GetHashSum retrieves data from the database using the path and algorithm
+func (hr HashRepository) GetHashSum(ctx context.Context, filePath string, algorithm string) (models.HashDataFromDB, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-	var newHashSum models.HashSumFromDB
-	err := row.Scan(&newHashSum.Id, &newHashSum.FileName, &newHashSum.FullFilePath, &newHashSum.Hash, &newHashSum.Algorithm)
+	query := fmt.Sprintf("SELECT id,fileName,fullFilePath,hashSum,algorithm FROM %s WHERE fullFilePath=$1 and algorithm=$2", nameTable)
+	row := hr.db.QueryRow(query, filePath, algorithm)
+
+	var hashDataFromDB models.HashDataFromDB
+	err := row.Scan(&hashDataFromDB.Id, &hashDataFromDB.FileName, &hashDataFromDB.FullFilePath, &hashDataFromDB.Hash, &hashDataFromDB.Algorithm)
 	if err != nil {
-		return models.HashSumFromDB{}, err
+		return models.HashDataFromDB{}, err
 	}
 
-	return newHashSum, nil
-
+	return hashDataFromDB, nil
 }
 
 func (hr HashRepository) delete() {

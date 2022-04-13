@@ -6,7 +6,6 @@ import (
 )
 
 type IHashService interface {
-	Ping(_ context.Context) error
-	SaveHashSum(hashSum models.HashSum, ctx context.Context) error
-	GetHashSum(filePath string, ctx context.Context) (models.HashSumFromDB, error)
+	SaveHashSum(ctx context.Context, hashSum models.HashData) error
+	GetHashSum(ctx context.Context, filePath string, algorithm string) (models.HashDataFromDB, error)
 }

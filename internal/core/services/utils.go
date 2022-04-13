@@ -15,26 +15,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 )
 
-// WorkerPool launches a certain number of workers for concurrent processing
-func WorkerPool(ctx context.Context, countWorkers int, algorithm string, jobs chan string, results chan models.HashSum, service ports.IHashService) {
-	var wg sync.WaitGroup
-	for w := 1; w <= countWorkers; w++ {
-		wg.Add(1)
-		go Worker(ctx, &wg, algorithm, jobs, results, service)
-	}
-	defer close(results)
-	wg.Wait()
-}
-
 // SearchFilePath searches for all files in the given directory
-func SearchFilePath(commonPath string, jobs chan<- string) {
+func SearchFilePath(ctx context.Context, commonPath string, jobs chan<- string) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 	err := filepath.Walk(commonPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return internal.ErrorDirPath
+			return err
 		}
 		if !info.IsDir() {
 			jobs <- path
@@ -44,136 +34,84 @@ func SearchFilePath(commonPath string, jobs chan<- string) {
 	close(jobs)
 
 	if err != nil {
-		log.Println(internal.ErrorDirPath)
+		log.Println(internal.ErrorDirPath, err)
 	}
-}
-
-// Worker gets jobs from a pipe and writes the result to stdout and database
-func Worker(ctx context.Context, wg *sync.WaitGroup, algorithm string, jobs <-chan string, results chan<- models.HashSum, service ports.IHashService) {
-	defer wg.Done()
-	for j := range jobs {
-		hashSum := CreateHash(j, algorithm)
-		results <- hashSum
-		err := service.SaveHashSum(hashSum, ctx)
-		if err != nil {
-			log.Println("error while save hash in db", err)
-		}
-	}
-
 }
 
 // CreateHash creates a hash sum of file depending on the algorithm
-func CreateHash(path string, alg string) models.HashSum {
+func CreateHash(path string, alg string) models.HashData {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Println(internal.ErrorFilePath)
 	}
 	defer f.Close()
 
-	outputHashSum := models.HashSum{}
-
-	switch strings.ToLower(alg) {
-	case "md5":
+	outputHashSum := models.HashData{}
+	alg = strings.ToUpper(alg)
+	switch alg {
+	case "MD5":
 		h := md5.New()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-	case "1":
+		outputHashSum.Algorithm = alg
+	case "SHA1":
 		h := sha1.New()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-	case "224":
+		outputHashSum.Algorithm = alg
+	case "SHA224":
 		h := sha256.New224()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-	case "384":
+		outputHashSum.Algorithm = alg
+	case "SHA384":
 		h := sha512.New384()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-	case "512":
+		outputHashSum.Algorithm = alg
+	case "SHA512":
 		h := sha512.New()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
+		outputHashSum.Algorithm = alg
 	default:
 		h := sha256.New()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
+		outputHashSum.Algorithm = "SHA256"
 	}
 
 	outputHashSum.FileName = filepath.Base(path)
 	outputHashSum.FullFilePath = path
+
 	return outputHashSum
 }
 
 // Result launching an infinite loop of receiving and outputting to Stdout the result and signal control
-func Result(ctx context.Context, results chan models.HashSum, c chan os.Signal) {
+func Result(ctx context.Context, results chan models.HashData, c chan os.Signal, service ports.IHashService) {
 
 	for {
 		select {
-		case outputHashSum, ok := <-results:
+		case hashData, ok := <-results:
 			if !ok {
 				return
 			}
-			time.Sleep(500 * time.Millisecond)
-			fmt.Printf("%x %s\n", outputHashSum.Hash, outputHashSum.FileName)
-		case <-c:
-			fmt.Println("exit program")
-			return
-		case <-ctx.Done():
-		}
-	}
-
-}
-
-func WorkerPoolForCheck(ctx context.Context, countWorkers int, algorithm string, jobs chan string, results chan models.HashSum) {
-	var wg sync.WaitGroup
-	for w := 1; w <= countWorkers; w++ {
-		wg.Add(1)
-		go WorkerForCheck(&wg, algorithm, jobs, results)
-	}
-	defer close(results)
-	wg.Wait()
-}
-
-func WorkerForCheck(wg *sync.WaitGroup, algorithm string, jobs <-chan string, results chan<- models.HashSum) {
-	defer wg.Done()
-	for j := range jobs {
-		hashSum := CreateHash(j, algorithm)
-		results <- hashSum
-	}
-}
-
-func ResultForCheck(ctx context.Context, results chan models.HashSum, c chan os.Signal, service ports.IHashService) {
-
-	for {
-		select {
-		case outputHashSum, ok := <-results:
-			if !ok {
-				return
-			}
-			//time.Sleep(500 * time.Millisecond)
-			hashSumFromDB, err := service.GetHashSum(outputHashSum.FullFilePath, ctx)
+			fmt.Printf("%x %s\n", hashData.Hash, hashData.FileName)
+			err := service.SaveHashSum(ctx, hashData)
 			if err != nil {
-				fmt.Println("Error getting hash from database ")
-			}
-			allFileChange := matchHashSum(outputHashSum, hashSumFromDB)
-			if len(allFileChange) > 0 {
-				for _, oneChange := range allFileChange {
-					fmt.Printf("Changes were made to the file - %v located along the path %v\n", oneChange.FileName, oneChange.FullFilePath)
-				}
-			} else {
-				fmt.Printf("All files are not change\n")
+				log.Println("error while save hash in db", err)
 			}
 		case <-c:
 			fmt.Println("exit program")
@@ -183,11 +121,35 @@ func ResultForCheck(ctx context.Context, results chan models.HashSum, c chan os.
 	}
 
 }
-func matchHashSum(outputHashSum models.HashSum, hashSumFromDB models.HashSumFromDB) []models.HashSum {
-	hashSumCurrent := fmt.Sprintf("%x", outputHashSum.Hash)
-	var result []models.HashSum
-	if hashSumCurrent != hashSumFromDB.Hash {
-		result = append(result, outputHashSum)
+
+func ResultForCheck(ctx context.Context, results chan models.HashData, c chan os.Signal, service ports.IHashService) []models.HashData {
+
+	for {
+		select {
+		case currentHashData, ok := <-results:
+			if !ok {
+				return []models.HashData{}
+			}
+
+			hashDataFromDB, err := service.GetHashSum(ctx, currentHashData.FullFilePath, currentHashData.Algorithm)
+			if err != nil {
+				fmt.Println("Error getting hash data from database ", err)
+			}
+			matchHashSum(currentHashData, hashDataFromDB)
+		case <-c:
+			fmt.Println("exit program")
+			return []models.HashData{}
+		case <-ctx.Done():
+		}
 	}
-	return result
+}
+func matchHashSum(currentHashData models.HashData, hashSumFromDB models.HashDataFromDB) /*[]models.HashData*/ {
+	hashSumCurrent := fmt.Sprintf("%x", currentHashData.Hash)
+
+	if hashSumCurrent != hashSumFromDB.Hash {
+		fmt.Printf("Changes were made to the file - %v located along the path %v\n", currentHashData.FileName, currentHashData.FullFilePath)
+	}
+	if currentHashData.FullFilePath != hashSumFromDB.FullFilePath {
+		fmt.Printf("File deleted  - %v located along the path %v\n", currentHashData.FileName, currentHashData.FullFilePath)
+	}
 }
