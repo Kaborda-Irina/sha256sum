@@ -50,14 +50,24 @@ func Initialize(ctx context.Context, cfg config.Config, doHelp bool, dirPath str
 	case len(dirPath) > 0:
 		go services.WorkerPool(ctx, countWorkers, algorithm, jobs, results)
 		go services.SearchFilePath(ctx, dirPath, jobs)
-		services.Result(ctx, results, c, service)
+		allHashData := services.Result(ctx, results, c, service)
+		err := service.SaveHashDir(ctx, allHashData)
+		if err != nil {
+			return
+		}
 
 	//Initialize custom -c flag
 	case len(checkHashSumFile) > 0:
 		go services.WorkerPool(ctx, countWorkers, algorithm, jobs, results)
 		go services.SearchFilePath(ctx, checkHashSumFile, jobs)
-		services.ResultForCheck(ctx, results, c, service)
-
+		//	allHashDataCurrent := services.Result(ctx, results, c, service)
+		allHashDataCurrent := services.ResultForCheck(ctx, results, c, service)
+		allHashDataFromDB, err := service.GetHashSum(ctx, allHashDataCurrent)
+		if err != nil {
+			fmt.Println("Error getting hash data from database ", err)
+		}
+		result := services.MatchHashSum(allHashDataCurrent, allHashDataFromDB)
+		fmt.Println(result)
 	//If the user has not entered a flag
 	default:
 		fmt.Println("use the -h flag on the command line to see all the flags in this app")

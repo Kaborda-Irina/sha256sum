@@ -100,42 +100,16 @@ func CreateHash(path string, alg string) models.HashData {
 }
 
 // Result launching an infinite loop of receiving and outputting to Stdout the result and signal control
-func Result(ctx context.Context, results chan models.HashData, c chan os.Signal, service ports.IHashService) {
-
+func Result(ctx context.Context, results chan models.HashData, c chan os.Signal, service ports.IHashService) []models.HashData {
+	var allHashData []models.HashData
 	for {
 		select {
 		case hashData, ok := <-results:
 			if !ok {
-				return
+				return allHashData
 			}
 			fmt.Printf("%x %s\n", hashData.Hash, hashData.FileName)
-			err := service.SaveHashSum(ctx, hashData)
-			if err != nil {
-				log.Println("error while save hash in db", err)
-			}
-		case <-c:
-			fmt.Println("exit program")
-			return
-		case <-ctx.Done():
-		}
-	}
-
-}
-
-func ResultForCheck(ctx context.Context, results chan models.HashData, c chan os.Signal, service ports.IHashService) []models.HashData {
-
-	for {
-		select {
-		case currentHashData, ok := <-results:
-			if !ok {
-				return []models.HashData{}
-			}
-
-			hashDataFromDB, err := service.GetHashSum(ctx, currentHashData.FullFilePath, currentHashData.Algorithm)
-			if err != nil {
-				fmt.Println("Error getting hash data from database ", err)
-			}
-			matchHashSum(currentHashData, hashDataFromDB)
+			allHashData = append(allHashData, hashData)
 		case <-c:
 			fmt.Println("exit program")
 			return []models.HashData{}
@@ -143,13 +117,35 @@ func ResultForCheck(ctx context.Context, results chan models.HashData, c chan os
 		}
 	}
 }
-func matchHashSum(currentHashData models.HashData, hashSumFromDB models.HashDataFromDB) /*[]models.HashData*/ {
-	hashSumCurrent := fmt.Sprintf("%x", currentHashData.Hash)
 
-	if hashSumCurrent != hashSumFromDB.Hash {
-		fmt.Printf("Changes were made to the file - %v located along the path %v\n", currentHashData.FileName, currentHashData.FullFilePath)
+func ResultForCheck(ctx context.Context, results chan models.HashData, c chan os.Signal, service ports.IHashService) []models.HashData {
+	var allHashData []models.HashData
+	for {
+		select {
+		case hashData, ok := <-results:
+			if !ok {
+				return allHashData
+			}
+			allHashData = append(allHashData, hashData)
+		case <-c:
+			fmt.Println("exit program")
+			return nil
+		case <-ctx.Done():
+		}
 	}
-	if currentHashData.FullFilePath != hashSumFromDB.FullFilePath {
-		fmt.Printf("File deleted  - %v located along the path %v\n", currentHashData.FileName, currentHashData.FullFilePath)
+}
+func MatchHashSum(currentHashData []models.HashData, hashSumFromDB []models.HashDataFromDB) string {
+
+	if len(currentHashData) > len(hashSumFromDB) {
+		return fmt.Sprintf("The file has been added to the specified path")
 	}
+	for i := range currentHashData {
+		if currentHashData[i].FullFilePath == hashSumFromDB[i].FullFilePath && fmt.Sprintf("%x", currentHashData[i].Hash) != hashSumFromDB[i].Hash {
+			return fmt.Sprintf("Changes were made to the file - %v located along the path %v\n", currentHashData[i].FileName, currentHashData[i].FullFilePath)
+		}
+		if currentHashData[i].FullFilePath != hashSumFromDB[i].FullFilePath {
+			return fmt.Sprintf("New files have been created - %v located along the path %v\n", currentHashData[i].FileName, currentHashData[i].FullFilePath)
+		}
+	}
+	return fmt.Sprintf("Files don't change")
 }

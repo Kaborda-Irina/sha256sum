@@ -21,19 +21,39 @@ func NewHashRepository(db *sqlx.DB) *HashRepository {
 	}
 }
 
-//SaveHashSum saves the data to the database and overwrites it if necessary
-func (hr HashRepository) SaveHashSum(ctx context.Context, inputHashSum models.HashData) error {
+//SaveHashDir iterates through all elements of the slice and triggers the save to database function
+func (hr HashRepository) SaveHashDir(ctx context.Context, allHashData []models.HashData) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	query := fmt.Sprintf(`SELECT checkHashSum($1, $2, $3, $4);`)
-	hash := fmt.Sprintf("%x", inputHashSum.Hash)
-	_, err := hr.db.Exec(query, inputHashSum.FileName, inputHashSum.FullFilePath, hash, inputHashSum.Algorithm)
+	for _, hash := range allHashData {
+		err := hr.SaveHashData(ctx, hash)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+//SaveHashData saves the data to the database and overwrites it if necessary
+func (hr HashRepository) SaveHashData(ctx context.Context, hashData models.HashData) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	tx, err := hr.db.Begin()
+
 	if err != nil {
 		return err
 	}
 
-	return nil
+	query := fmt.Sprintf(`SELECT checkHashSum($1, $2, $3, $4);`)
+	hash := fmt.Sprintf("%x", hashData.Hash)
+	_, err = tx.Exec(query, hashData.FileName, hashData.FullFilePath, hash, hashData.Algorithm)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 //GetHashSum retrieves data from the database using the path and algorithm

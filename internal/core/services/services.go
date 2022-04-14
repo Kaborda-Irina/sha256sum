@@ -17,26 +17,39 @@ func NewHashService(hashRepository ports.IHashRepository) ports.IHashService {
 		hashRepository,
 	}
 }
-
-func (hs HashService) SaveHashSum(ctx context.Context, hashSum models.HashData) error {
+func (hs HashService) SaveHashDir(ctx context.Context, allHashData []models.HashData) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	err := hs.hashRepository.SaveHashSum(ctx, hashSum)
+	err := hs.hashRepository.SaveHashDir(ctx, allHashData)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (hs HashService) GetHashSum(ctx context.Context, filePath string, algorithm string) (models.HashDataFromDB, error) {
+func (hs HashService) SaveHashData(ctx context.Context, hashData models.HashData) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	hash, err := hs.hashRepository.GetHashSum(ctx, filePath, algorithm)
+	err := hs.hashRepository.SaveHashData(ctx, hashData)
 	if err != nil {
-		log.Printf("hash service didn't get hash sum %s", err)
-		return models.HashDataFromDB{}, err
+		return err
 	}
-	return hash, nil
+	return nil
+}
+
+func (hs HashService) GetHashSum(ctx context.Context, allHashData []models.HashData) ([]models.HashDataFromDB, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var allHashDataFromDB []models.HashDataFromDB
+	for _, hashData := range allHashData {
+		hash, err := hs.hashRepository.GetHashSum(ctx, hashData.FullFilePath, hashData.Algorithm)
+		if err != nil {
+			log.Printf("hash service didn't get hash sum %s", err)
+			return nil, err
+		}
+		allHashDataFromDB = append(allHashDataFromDB, hash)
+	}
+	return allHashDataFromDB, nil
 }
