@@ -9,12 +9,10 @@ import (
 	"fmt"
 	"github.com/Kaborda-Irina/sha256sum/internal"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
-	"github.com/Kaborda-Irina/sha256sum/internal/core/ports"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -47,7 +45,7 @@ func CreateHash(path string, alg string) models.HashData {
 	defer f.Close()
 
 	outputHashSum := models.HashData{}
-	alg = strings.ToUpper(alg)
+
 	switch alg {
 	case "MD5":
 		h := md5.New()
@@ -55,52 +53,52 @@ func CreateHash(path string, alg string) models.HashData {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-		outputHashSum.Algorithm = alg
+
 	case "SHA1":
 		h := sha1.New()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-		outputHashSum.Algorithm = alg
+
 	case "SHA224":
 		h := sha256.New224()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-		outputHashSum.Algorithm = alg
+
 	case "SHA384":
 		h := sha512.New384()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-		outputHashSum.Algorithm = alg
+
 	case "SHA512":
 		h := sha512.New()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-		outputHashSum.Algorithm = alg
+
 	default:
 		h := sha256.New()
 		if _, err := io.Copy(h, f); err != nil {
 			log.Println(internal.ErrorHash)
 		}
 		outputHashSum.Hash = h.Sum(nil)
-		outputHashSum.Algorithm = "SHA256"
+		alg = "SHA256"
 	}
 
 	outputHashSum.FileName = filepath.Base(path)
 	outputHashSum.FullFilePath = path
-
+	outputHashSum.Algorithm = alg
 	return outputHashSum
 }
 
 // Result launching an infinite loop of receiving and outputting to Stdout the result and signal control
-func Result(ctx context.Context, results chan models.HashData, c chan os.Signal, service ports.IHashService) []models.HashData {
+func Result(ctx context.Context, results chan models.HashData, c chan os.Signal) []models.HashData {
 	var allHashData []models.HashData
 	for {
 		select {
@@ -118,7 +116,7 @@ func Result(ctx context.Context, results chan models.HashData, c chan os.Signal,
 	}
 }
 
-func ResultForCheck(ctx context.Context, results chan models.HashData, c chan os.Signal, service ports.IHashService) []models.HashData {
+func ResultForCheck(ctx context.Context, results chan models.HashData, c chan os.Signal) []models.HashData {
 	var allHashData []models.HashData
 	for {
 		select {
@@ -133,19 +131,4 @@ func ResultForCheck(ctx context.Context, results chan models.HashData, c chan os
 		case <-ctx.Done():
 		}
 	}
-}
-func MatchHashSum(currentHashData []models.HashData, hashSumFromDB []models.HashDataFromDB) string {
-
-	if len(currentHashData) > len(hashSumFromDB) {
-		return fmt.Sprintf("The file has been added to the specified path")
-	}
-	for i := range currentHashData {
-		if currentHashData[i].FullFilePath == hashSumFromDB[i].FullFilePath && fmt.Sprintf("%x", currentHashData[i].Hash) != hashSumFromDB[i].Hash {
-			return fmt.Sprintf("Changes were made to the file - %v located along the path %v\n", currentHashData[i].FileName, currentHashData[i].FullFilePath)
-		}
-		if currentHashData[i].FullFilePath != hashSumFromDB[i].FullFilePath {
-			return fmt.Sprintf("New files have been created - %v located along the path %v\n", currentHashData[i].FileName, currentHashData[i].FullFilePath)
-		}
-	}
-	return fmt.Sprintf("Files don't change")
 }

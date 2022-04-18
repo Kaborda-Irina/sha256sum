@@ -7,6 +7,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+//Initialize postgres database
 func Initialize(cfg config.Config) (*sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", cfg.URI)
 	if err != nil {

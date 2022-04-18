@@ -6,7 +6,7 @@ import (
 )
 
 type IHashService interface {
-	SaveHashDir(ctx context.Context, allHashData []models.HashData) error
-	SaveHashData(ctx context.Context, hashData models.HashData) error
-	GetHashSum(ctx context.Context, allHashData []models.HashData) ([]models.HashDataFromDB, error)
+	SaveHashData(ctx context.Context, allHashData []models.HashData) error
+	GetHashSum(ctx context.Context, dirFiles string, algorithm string) ([]models.HashDataFromDB, error)
+	ChangedHashes(currentHashData []models.HashData, hashSumFromDB []models.HashDataFromDB) ([]models.ChangedHashes, []models.DeletedHashes, []models.AddedHashes, error)
 }

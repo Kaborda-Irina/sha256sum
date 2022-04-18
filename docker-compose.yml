@@ -13,4 +13,4 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
       # copy the sql script to create tables
-      - ./postgres
+      - ./postgres/input_data.sql:/docker-entrypoint-initdb.d/input_data.sql

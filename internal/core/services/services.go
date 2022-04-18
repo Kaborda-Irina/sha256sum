@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/ports"
 	"log"
@@ -12,44 +13,95 @@ type HashService struct {
 	hashRepository ports.IHashRepository
 }
 
+//NewHashService creates a new struct HashService
 func NewHashService(hashRepository ports.IHashRepository) ports.IHashService {
 	return HashService{
 		hashRepository,
 	}
 }
-func (hs HashService) SaveHashDir(ctx context.Context, allHashData []models.HashData) error {
+func (hs HashService) SaveHashData(ctx context.Context, allHashData []models.HashData) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	err := hs.hashRepository.SaveHashDir(ctx, allHashData)
+	err := hs.hashRepository.SaveHashData(ctx, allHashData)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (hs HashService) SaveHashData(ctx context.Context, hashData models.HashData) error {
+//GetHashSum accesses the repository to get data from the database
+func (hs HashService) GetHashSum(ctx context.Context, dirFiles string, algorithm string) ([]models.HashDataFromDB, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	err := hs.hashRepository.SaveHashData(ctx, hashData)
+	hash, err := hs.hashRepository.GetHashSum(ctx, dirFiles, algorithm)
 	if err != nil {
-		return err
+		log.Printf("hash service didn't get hash sum %s", err)
+		return nil, err
 	}
-	return nil
+
+	return hash, nil
 }
 
-func (hs HashService) GetHashSum(ctx context.Context, allHashData []models.HashData) ([]models.HashDataFromDB, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	var allHashDataFromDB []models.HashDataFromDB
-	for _, hashData := range allHashData {
-		hash, err := hs.hashRepository.GetHashSum(ctx, hashData.FullFilePath, hashData.Algorithm)
-		if err != nil {
-			log.Printf("hash service didn't get hash sum %s", err)
-			return nil, err
+//ChangedHashes checks if the current data has changed with the data stored in the database
+func (hs HashService) ChangedHashes(currentHashData []models.HashData, hashSumFromDB []models.HashDataFromDB) ([]models.ChangedHashes, []models.DeletedHashes, []models.AddedHashes, error) {
+	var changeResult []models.ChangedHashes
+	var deletedResult []models.DeletedHashes
+	var addedResult []models.AddedHashes
+	var trigger bool
+
+	for _, dataFromDB := range hashSumFromDB {
+		trigger = false
+		for _, dataCurrent := range currentHashData {
+			if dataFromDB.FullFilePath == dataCurrent.FullFilePath {
+				if dataFromDB.Hash != fmt.Sprintf("%x", dataCurrent.Hash) {
+					changeResult = append(changeResult, models.ChangedHashes{
+						FileName:    dataFromDB.FileName,
+						FilePath:    dataFromDB.FullFilePath,
+						OldChecksum: dataFromDB.Hash,
+						NewChecksum: fmt.Sprintf("%x", dataCurrent.Hash),
+					})
+				}
+				trigger = true
+				break
+			}
 		}
-		allHashDataFromDB = append(allHashDataFromDB, hash)
+
+		if !trigger {
+			deletedResult = append(deletedResult, models.DeletedHashes{
+				FileName:    dataFromDB.FileName,
+				FilePath:    dataFromDB.FullFilePath,
+				OldChecksum: dataFromDB.Hash,
+				Algorithm:   dataFromDB.Algorithm,
+			})
+		}
 	}
-	return allHashDataFromDB, nil
+
+	for _, dataCurrent := range currentHashData {
+		trigger = false
+		for _, dataFromDB := range hashSumFromDB {
+			if dataCurrent.FullFilePath == dataFromDB.FullFilePath {
+				trigger = true
+				break
+			}
+		}
+
+		if !trigger {
+			addedResult = append(addedResult, models.AddedHashes{
+				FileName:    dataCurrent.FileName,
+				FilePath:    dataCurrent.FullFilePath,
+				NewChecksum: fmt.Sprintf("%x", dataCurrent.Hash),
+				Algorithm:   dataCurrent.Algorithm,
+			})
+		}
+	}
+
+	if len(deletedResult) > 0 {
+		err := hs.hashRepository.UpdateDeletedItems(deletedResult)
+		if err != nil {
+			return []models.ChangedHashes{}, []models.DeletedHashes{}, []models.AddedHashes{}, err
+		}
+	}
+	return changeResult, deletedResult, addedResult, nil
 }
