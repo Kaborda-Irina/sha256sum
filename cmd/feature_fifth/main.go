@@ -7,6 +7,8 @@ import (
 	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
 	"github.com/Kaborda-Irina/sha256sum/internal/initialize"
 	"log"
+	"os"
+	"os/signal"
 	"time"
 )
 
@@ -31,8 +33,16 @@ func main() {
 	if err != nil {
 		log.Fatal("Error during loading from config file", err)
 	}
-	ctx := context.Background()
 
-	initialize.Initialize(ctx, cfg, doHelp, dirPath, algorithm, checkHashSumFile)
+	ctx := context.Background()
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+	ctx, cancel := context.WithCancel(ctx)
+	defer func() {
+		signal.Stop(sig)
+		cancel()
+	}()
+
+	initialize.Initialize(ctx, cfg, sig, doHelp, dirPath, algorithm, checkHashSumFile)
 	fmt.Println(time.Since(start).Seconds())
 }

@@ -14,11 +14,13 @@ type HashService struct {
 }
 
 //NewHashService creates a new struct HashService
-func NewHashService(hashRepository ports.IHashRepository) ports.IHashService {
-	return HashService{
+func NewHashService(hashRepository ports.IHashRepository) *HashService {
+	return &HashService{
 		hashRepository,
 	}
 }
+
+//SaveHashData accesses the repository to save data to the database
 func (hs HashService) SaveHashData(ctx context.Context, allHashData []models.HashData) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -45,23 +47,19 @@ func (hs HashService) GetHashSum(ctx context.Context, dirFiles string, algorithm
 }
 
 //ChangedHashes checks if the current data has changed with the data stored in the database
-func (hs HashService) ChangedHashes(currentHashData []models.HashData, hashSumFromDB []models.HashDataFromDB) ([]models.ChangedHashes, []models.DeletedHashes, []models.AddedHashes, error) {
-	var changeResult []models.ChangedHashes
+func (hs HashService) ChangedHashes(currentHashData []models.HashData, hashSumFromDB []models.HashDataFromDB) error {
 	var deletedResult []models.DeletedHashes
-	var addedResult []models.AddedHashes
 	var trigger bool
+	var count int
 
 	for _, dataFromDB := range hashSumFromDB {
 		trigger = false
 		for _, dataCurrent := range currentHashData {
 			if dataFromDB.FullFilePath == dataCurrent.FullFilePath {
 				if dataFromDB.Hash != fmt.Sprintf("%x", dataCurrent.Hash) {
-					changeResult = append(changeResult, models.ChangedHashes{
-						FileName:    dataFromDB.FileName,
-						FilePath:    dataFromDB.FullFilePath,
-						OldChecksum: dataFromDB.Hash,
-						NewChecksum: fmt.Sprintf("%x", dataCurrent.Hash),
-					})
+					count++
+					fmt.Printf("Changed: file - %s the path %s, old hash sum %s, new hash sum %s\n",
+						dataFromDB.FileName, dataFromDB.FullFilePath, dataFromDB.Hash, fmt.Sprintf("%x", dataCurrent.Hash))
 				}
 				trigger = true
 				break
@@ -69,6 +67,9 @@ func (hs HashService) ChangedHashes(currentHashData []models.HashData, hashSumFr
 		}
 
 		if !trigger {
+			count++
+			fmt.Printf("Deleted: file - %s the path %s hash sum %s\n",
+				dataFromDB.FileName, dataFromDB.FullFilePath, dataFromDB.Hash)
 			deletedResult = append(deletedResult, models.DeletedHashes{
 				FileName:    dataFromDB.FileName,
 				FilePath:    dataFromDB.FullFilePath,
@@ -88,20 +89,21 @@ func (hs HashService) ChangedHashes(currentHashData []models.HashData, hashSumFr
 		}
 
 		if !trigger {
-			addedResult = append(addedResult, models.AddedHashes{
-				FileName:    dataCurrent.FileName,
-				FilePath:    dataCurrent.FullFilePath,
-				NewChecksum: fmt.Sprintf("%x", dataCurrent.Hash),
-				Algorithm:   dataCurrent.Algorithm,
-			})
+			count++
+			fmt.Printf("Added: file - %s the path %s hash sum %s\n",
+				dataCurrent.FileName, dataCurrent.FullFilePath, fmt.Sprintf("%x", dataCurrent.Hash))
 		}
 	}
 
 	if len(deletedResult) > 0 {
 		err := hs.hashRepository.UpdateDeletedItems(deletedResult)
 		if err != nil {
-			return []models.ChangedHashes{}, []models.DeletedHashes{}, []models.AddedHashes{}, err
+			return err
 		}
 	}
-	return changeResult, deletedResult, addedResult, nil
+
+	if count == 0 {
+		fmt.Println("Files didn't changed, added or deleted")
+	}
+	return nil
 }

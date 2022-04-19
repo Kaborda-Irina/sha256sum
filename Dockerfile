@@ -1,15 +1,15 @@
-FROM golang:1.17-alpine AS buildenv
+FROM golang:1.18-alpine AS buildenv
 WORKDIR /src
 ADD . /src
 
-RUN GOOS=linux go build -o ./out/sha256sum ./cmd/feature_fifth/main.go
+RUN GOOS=linux go build -o sha256sum cmd/feature_fifth/main.go
 
-RUN chmod +x ./out/sha256sum
+RUN chmod +x sha256sum
 
 FROM alpine:latest
 WORKDIR /app
-COPY --from=buildenv /src/out/sha256sum .
-
+COPY --from=buildenv /src/sha256sum .
+COPY --from=buildenv /src/config.yaml ./
 #### Local application port
 EXPOSE 9090
 
