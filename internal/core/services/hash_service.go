@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/ports"
+	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 	"log"
 	"time"
 )
@@ -21,7 +22,7 @@ func NewHashService(hashRepository ports.IHashRepository) *HashService {
 }
 
 //SaveHashData accesses the repository to save data to the database
-func (hs HashService) SaveHashData(ctx context.Context, allHashData []models.HashData) error {
+func (hs HashService) SaveHashData(ctx context.Context, allHashData []api.HashData) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -47,7 +48,7 @@ func (hs HashService) GetHashSum(ctx context.Context, dirFiles string, algorithm
 }
 
 //ChangedHashes checks if the current data has changed with the data stored in the database
-func (hs HashService) ChangedHashes(currentHashData []models.HashData, hashSumFromDB []models.HashDataFromDB) error {
+func (hs HashService) ChangedHashes(currentHashData []api.HashData, hashSumFromDB []models.HashDataFromDB) error {
 	var deletedResult []models.DeletedHashes
 	var trigger bool
 	var count int

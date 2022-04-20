@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/ports"
 	"github.com/Kaborda-Irina/sha256sum/internal/repositories"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
@@ -24,7 +23,7 @@ func NewAppService(r *repositories.AppRepository) *AppService {
 }
 
 //StartGetHashData getting the hash sum of all files, outputs to os.Stdout and saves to the database
-func (as *AppService) StartGetHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan models.HashData, sig chan os.Signal) {
+func (as *AppService) StartGetHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan api.HashData, sig chan os.Signal) {
 	go api.WorkerPool(ctx, countWorkers, algorithm, jobs, results)
 	go api.SearchFilePath(ctx, flagName, jobs)
 	allHashData := api.Result(ctx, results, sig)
@@ -37,7 +36,7 @@ func (as *AppService) StartGetHashData(ctx context.Context, flagName string, alg
 }
 
 //StartCheckHashData getting the hash sum of all files, matches them and outputs to os.Stdout changes
-func (as *AppService) StartCheckHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan models.HashData, sig chan os.Signal) {
+func (as *AppService) StartCheckHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan api.HashData, sig chan os.Signal) {
 	go api.WorkerPool(ctx, countWorkers, algorithm, jobs, results)
 	go api.SearchFilePath(ctx, flagName, jobs)
 	allHashDataCurrent := api.ResultForCheck(ctx, results, sig)

@@ -5,9 +5,9 @@ import (
 	"flag"
 	"fmt"
 	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
-	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/services"
 	"github.com/Kaborda-Irina/sha256sum/internal/repositories"
+	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 	postrges "github.com/Kaborda-Irina/sha256sum/postgres"
 	"log"
 	"os"
@@ -31,7 +31,7 @@ func Initialize(ctx context.Context, cfg config.Config, sig chan os.Signal, doHe
 	service := services.NewAppService(repository)
 
 	jobs := make(chan string)
-	results := make(chan models.HashData)
+	results := make(chan api.HashData)
 	algorithm = strings.ToUpper(algorithm)
 
 	switch {

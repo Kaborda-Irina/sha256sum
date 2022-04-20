@@ -8,7 +8,6 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"github.com/Kaborda-Irina/sha256sum/internal"
-	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"io"
 	"log"
 	"os"
@@ -37,14 +36,14 @@ func SearchFilePath(ctx context.Context, commonPath string, jobs chan<- string) 
 }
 
 // CreateHash creates a hash sum of file depending on the algorithm
-func CreateHash(path string, alg string) models.HashData {
+func CreateHash(path string, alg string) HashData {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Println(internal.ErrorFilePath)
 	}
 	defer f.Close()
 
-	outputHashSum := models.HashData{}
+	outputHashSum := HashData{}
 
 	switch alg {
 	case "MD5":
@@ -98,8 +97,8 @@ func CreateHash(path string, alg string) models.HashData {
 }
 
 // Result launching an infinite loop of receiving and outputting to Stdout the result and signal control
-func Result(ctx context.Context, results chan models.HashData, c chan os.Signal) []models.HashData {
-	var allHashData []models.HashData
+func Result(ctx context.Context, results chan HashData, c chan os.Signal) []HashData {
+	var allHashData []HashData
 	for {
 		select {
 		case hashData, ok := <-results:
@@ -110,14 +109,14 @@ func Result(ctx context.Context, results chan models.HashData, c chan os.Signal)
 			allHashData = append(allHashData, hashData)
 		case <-c:
 			fmt.Println("exit program")
-			return []models.HashData{}
+			return []HashData{}
 		case <-ctx.Done():
 		}
 	}
 }
 
-func ResultForCheck(ctx context.Context, results chan models.HashData, c chan os.Signal) []models.HashData {
-	var allHashData []models.HashData
+func ResultForCheck(ctx context.Context, results chan HashData, c chan os.Signal) []HashData {
+	var allHashData []HashData
 	for {
 		select {
 		case hashData, ok := <-results:

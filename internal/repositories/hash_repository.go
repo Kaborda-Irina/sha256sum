@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
+	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 	"github.com/jmoiron/sqlx"
 	"time"
 )
@@ -21,7 +22,7 @@ func NewHashRepository(db *sqlx.DB) *HashRepository {
 }
 
 //SaveHashData iterates through all elements of the slice and triggers the save to database function
-func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []models.HashData) error {
+func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.HashData) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	start := time.Now()

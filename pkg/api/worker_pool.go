@@ -2,13 +2,12 @@ package api
 
 import (
 	"context"
-	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"sync"
 	"time"
 )
 
 // WorkerPool launches a certain number of workers for concurrent processing
-func WorkerPool(ctx context.Context, countWorkers int, algorithm string, jobs chan string, results chan models.HashData) {
+func WorkerPool(ctx context.Context, countWorkers int, algorithm string, jobs chan string, results chan HashData) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
@@ -21,7 +20,7 @@ func WorkerPool(ctx context.Context, countWorkers int, algorithm string, jobs ch
 }
 
 // Worker gets jobs from a pipe and writes the result to stdout and database
-func Worker(ctx context.Context, wg *sync.WaitGroup, algorithm string, jobs <-chan string, results chan<- models.HashData) {
+func Worker(ctx context.Context, wg *sync.WaitGroup, algorithm string, jobs <-chan string, results chan<- HashData) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	defer wg.Done()
