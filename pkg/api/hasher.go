@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
 	"github.com/Kaborda-Irina/sha256sum/internal"
 	"github.com/sirupsen/logrus"
@@ -52,42 +53,42 @@ func CreateHash(path string, alg string, logger *logrus.Logger) HashData {
 		if _, err := io.Copy(h, f); err != nil {
 			logger.Error(internal.ErrorHash, err)
 		}
-		outputHashSum.Hash = h.Sum(nil)
+		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	case "SHA1":
 		h := sha1.New()
 		if _, err := io.Copy(h, f); err != nil {
 			logger.Error(internal.ErrorHash, err)
 		}
-		outputHashSum.Hash = h.Sum(nil)
+		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	case "SHA224":
 		h := sha256.New224()
 		if _, err := io.Copy(h, f); err != nil {
 			logger.Error(internal.ErrorHash, err)
 		}
-		outputHashSum.Hash = h.Sum(nil)
+		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	case "SHA384":
 		h := sha512.New384()
 		if _, err := io.Copy(h, f); err != nil {
 			logger.Error(internal.ErrorHash, err)
 		}
-		outputHashSum.Hash = h.Sum(nil)
+		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	case "SHA512":
 		h := sha512.New()
 		if _, err := io.Copy(h, f); err != nil {
 			logger.Error(internal.ErrorHash, err)
 		}
-		outputHashSum.Hash = h.Sum(nil)
+		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	default:
 		h := sha256.New()
 		if _, err := io.Copy(h, f); err != nil {
 			logger.Error(internal.ErrorHash, err)
 		}
-		outputHashSum.Hash = h.Sum(nil)
+		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 		alg = "SHA256"
 	}
 
@@ -106,7 +107,7 @@ func Result(ctx context.Context, results chan HashData, c chan os.Signal, logger
 			if !ok {
 				return allHashData
 			}
-			fmt.Printf("%x %s\n", hashData.Hash, hashData.FileName)
+			fmt.Printf("%s %s\n", hashData.Hash, hashData.FileName)
 			allHashData = append(allHashData, hashData)
 		case <-c:
 			fmt.Println("exit program")

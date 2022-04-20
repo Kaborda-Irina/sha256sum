@@ -3,6 +3,8 @@ services:
   web:
     build: .
     container_name: gowebapp
+    depends_on:
+      - postgres
     ports:
       - "9090:9090"
   postgres:

@@ -17,12 +17,12 @@ import (
 func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, sig chan os.Signal, doHelp bool, dirPath string, algorithm string, checkHashSumFile string) {
 
 	// Initialize PostgreSQL
-	logger.Println("Starting postgres connection")
+	logger.Info("Starting postgres connection")
 	postgres, err := postrges.Initialize(cfg, logger)
 	if err != nil {
 		logger.Error("Failed to connection to Postgres", err)
 	}
-	logger.Println("Postgres connection is successful")
+	logger.Info("Postgres connection is successful")
 
 	// Initialize repository
 	repository := repositories.NewAppRepository(postgres, logger)

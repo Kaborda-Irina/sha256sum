@@ -39,7 +39,7 @@ func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.Has
 		VALUES($1,$2,$3,$4) ON CONFLICT (fullFilePath,algorithm) DO UPDATE SET hashSum=EXCLUDED.hashSum`)
 
 	for _, hash := range allHashData {
-		_, err = tx.Exec(query, hash.FileName, hash.FullFilePath, fmt.Sprintf("%x", hash.Hash), hash.Algorithm)
+		_, err = tx.Exec(query, hash.FileName, hash.FullFilePath, hash.Hash, hash.Algorithm)
 		if err != nil {
 			tx.Rollback()
 			hr.logger.Error(err)

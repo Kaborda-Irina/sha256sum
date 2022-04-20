@@ -1,7 +1,7 @@
 package api
 
 type HashData struct {
-	Hash         []byte
+	Hash         string
 	FileName     string
 	FullFilePath string
 	Algorithm    string

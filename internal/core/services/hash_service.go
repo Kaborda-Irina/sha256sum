@@ -60,10 +60,10 @@ func (hs HashService) ChangedHashes(currentHashData []api.HashData, hashSumFromD
 		trigger = false
 		for _, dataCurrent := range currentHashData {
 			if dataFromDB.FullFilePath == dataCurrent.FullFilePath {
-				if dataFromDB.Hash != fmt.Sprintf("%x", dataCurrent.Hash) {
+				if dataFromDB.Hash != dataCurrent.Hash {
 					count++
 					fmt.Printf("Changed: file - %s the path %s, old hash sum %s, new hash sum %s\n",
-						dataFromDB.FileName, dataFromDB.FullFilePath, dataFromDB.Hash, fmt.Sprintf("%x", dataCurrent.Hash))
+						dataFromDB.FileName, dataFromDB.FullFilePath, dataFromDB.Hash, dataCurrent.Hash)
 				}
 				trigger = true
 				break
@@ -95,7 +95,7 @@ func (hs HashService) ChangedHashes(currentHashData []api.HashData, hashSumFromD
 		if !trigger {
 			count++
 			fmt.Printf("Added: file - %s the path %s hash sum %s\n",
-				dataCurrent.FileName, dataCurrent.FullFilePath, fmt.Sprintf("%x", dataCurrent.Hash))
+				dataCurrent.FileName, dataCurrent.FullFilePath, dataCurrent.Hash)
 		}
 	}
 

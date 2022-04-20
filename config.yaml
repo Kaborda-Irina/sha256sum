@@ -6,3 +6,6 @@ postgres:
   database_name: hashdb
 #Server configurations
 port: "9090"
+logger:
+  level: 5
+  logfile:
