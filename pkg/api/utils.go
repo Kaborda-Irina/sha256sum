@@ -8,19 +8,20 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"github.com/Kaborda-Irina/sha256sum/internal"
+	"github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
 )
 
 // SearchFilePath searches for all files in the given directory
-func SearchFilePath(ctx context.Context, commonPath string, jobs chan<- string) {
+func SearchFilePath(ctx context.Context, commonPath string, jobs chan<- string, logger *logrus.Logger) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	err := filepath.Walk(commonPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			logger.Error(err)
 			return err
 		}
 		if !info.IsDir() {
@@ -31,15 +32,15 @@ func SearchFilePath(ctx context.Context, commonPath string, jobs chan<- string) 
 	close(jobs)
 
 	if err != nil {
-		log.Println(internal.ErrorDirPath, err)
+		logger.Error(internal.ErrorDirPath, err)
 	}
 }
 
 // CreateHash creates a hash sum of file depending on the algorithm
-func CreateHash(path string, alg string) HashData {
+func CreateHash(path string, alg string, logger *logrus.Logger) HashData {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Println(internal.ErrorFilePath)
+		logger.Error(internal.ErrorFilePath, err)
 	}
 	defer f.Close()
 
@@ -49,42 +50,42 @@ func CreateHash(path string, alg string) HashData {
 	case "MD5":
 		h := md5.New()
 		if _, err := io.Copy(h, f); err != nil {
-			log.Println(internal.ErrorHash)
+			logger.Error(internal.ErrorHash, err)
 		}
 		outputHashSum.Hash = h.Sum(nil)
 
 	case "SHA1":
 		h := sha1.New()
 		if _, err := io.Copy(h, f); err != nil {
-			log.Println(internal.ErrorHash)
+			logger.Error(internal.ErrorHash, err)
 		}
 		outputHashSum.Hash = h.Sum(nil)
 
 	case "SHA224":
 		h := sha256.New224()
 		if _, err := io.Copy(h, f); err != nil {
-			log.Println(internal.ErrorHash)
+			logger.Error(internal.ErrorHash, err)
 		}
 		outputHashSum.Hash = h.Sum(nil)
 
 	case "SHA384":
 		h := sha512.New384()
 		if _, err := io.Copy(h, f); err != nil {
-			log.Println(internal.ErrorHash)
+			logger.Error(internal.ErrorHash, err)
 		}
 		outputHashSum.Hash = h.Sum(nil)
 
 	case "SHA512":
 		h := sha512.New()
 		if _, err := io.Copy(h, f); err != nil {
-			log.Println(internal.ErrorHash)
+			logger.Error(internal.ErrorHash, err)
 		}
 		outputHashSum.Hash = h.Sum(nil)
 
 	default:
 		h := sha256.New()
 		if _, err := io.Copy(h, f); err != nil {
-			log.Println(internal.ErrorHash)
+			logger.Error(internal.ErrorHash, err)
 		}
 		outputHashSum.Hash = h.Sum(nil)
 		alg = "SHA256"
@@ -97,7 +98,7 @@ func CreateHash(path string, alg string) HashData {
 }
 
 // Result launching an infinite loop of receiving and outputting to Stdout the result and signal control
-func Result(ctx context.Context, results chan HashData, c chan os.Signal) []HashData {
+func Result(ctx context.Context, results chan HashData, c chan os.Signal, logger *logrus.Logger) []HashData {
 	var allHashData []HashData
 	for {
 		select {
@@ -115,7 +116,7 @@ func Result(ctx context.Context, results chan HashData, c chan os.Signal) []Hash
 	}
 }
 
-func ResultForCheck(ctx context.Context, results chan HashData, c chan os.Signal) []HashData {
+func ResultForCheck(ctx context.Context, results chan HashData, c chan os.Signal, logger *logrus.Logger) []HashData {
 	var allHashData []HashData
 	for {
 		select {

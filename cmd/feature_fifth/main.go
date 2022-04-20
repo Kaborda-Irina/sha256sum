@@ -6,7 +6,6 @@ import (
 	"fmt"
 	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
 	"github.com/Kaborda-Irina/sha256sum/internal/initialize"
-	"log"
 	"os"
 	"os/signal"
 	"time"
@@ -29,9 +28,9 @@ func main() {
 	flag.Parse()
 	start := time.Now()
 	//Initialize config
-	cfg, err := config.LoadConfig()
+	cfg, logger, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal("Error during loading from config file", err)
+		logger.Fatal("Error during loading from config file", err)
 	}
 
 	ctx := context.Background()
@@ -43,6 +42,6 @@ func main() {
 		cancel()
 	}()
 
-	initialize.Initialize(ctx, cfg, sig, doHelp, dirPath, algorithm, checkHashSumFile)
+	initialize.Initialize(ctx, cfg, logger, sig, doHelp, dirPath, algorithm, checkHashSumFile)
 	fmt.Println(time.Since(start).Seconds())
 }

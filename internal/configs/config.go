@@ -1,10 +1,14 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+)
 
 type Config struct {
-	Port       int `mapstructure:"port"`
-	PostgreSQL `mapstructure:"postgres"`
+	Port         int `mapstructure:"port"`
+	PostgreSQL   `mapstructure:"postgres"`
+	LoggerConfig `mapstructure:"logger"`
 }
 
 type PostgreSQL struct {
@@ -13,8 +17,12 @@ type PostgreSQL struct {
 	Password string `mapstructure:"password"`
 	Database string `mapstructure:"database_name"`
 }
+type LoggerConfig struct {
+	Level       int    `mapstructure:"level"`
+	InfoLogFile string `mapstructure:"info_log_file"`
+}
 
-func LoadConfig() (config Config, err error) {
+func LoadConfig() (config Config, logger *logrus.Logger, err error) {
 
 	//Initialize properties config
 	viper.SetConfigName("config")
@@ -30,5 +38,6 @@ func LoadConfig() (config Config, err error) {
 
 	err = viper.Unmarshal(&config)
 
-	return config, err
+	logger = InitLogger(&config.LoggerConfig)
+	return config, logger, err
 }

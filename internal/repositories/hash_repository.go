@@ -6,18 +6,21 @@ import (
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
 const nameTable = "hashFiles"
 
 type HashRepository struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	logger *logrus.Logger
 }
 
-func NewHashRepository(db *sqlx.DB) *HashRepository {
+func NewHashRepository(db *sqlx.DB, logger *logrus.Logger) *HashRepository {
 	return &HashRepository{
-		db,
+		db:     db,
+		logger: logger,
 	}
 }
 
@@ -28,6 +31,7 @@ func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.Has
 	start := time.Now()
 	tx, err := hr.db.Begin()
 	if err != nil {
+		hr.logger.Error(err)
 		return err
 	}
 	query := fmt.Sprintf(`
@@ -38,6 +42,7 @@ func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.Has
 		_, err = tx.Exec(query, hash.FileName, hash.FullFilePath, fmt.Sprintf("%x", hash.Hash), hash.Algorithm)
 		if err != nil {
 			tx.Rollback()
+			hr.logger.Error(err)
 			return err
 		}
 	}
@@ -57,12 +62,14 @@ func (hr HashRepository) GetHashSum(ctx context.Context, dirFiles string, algori
 
 	rows, err := hr.db.Query(query, "%"+dirFiles+"%", algorithm)
 	if err != nil {
+		hr.logger.Error(err)
 		return []models.HashDataFromDB{}, err
 	}
 	for rows.Next() {
 		var hashDataFromDB models.HashDataFromDB
 		err := rows.Scan(&hashDataFromDB.Id, &hashDataFromDB.FileName, &hashDataFromDB.FullFilePath, &hashDataFromDB.Hash, &hashDataFromDB.Algorithm)
 		if err != nil {
+			hr.logger.Error(err)
 			return []models.HashDataFromDB{}, err
 		}
 		allHashDataFromDB = append(allHashDataFromDB, hashDataFromDB)
@@ -75,6 +82,7 @@ func (hr HashRepository) GetHashSum(ctx context.Context, dirFiles string, algori
 func (hr HashRepository) UpdateDeletedItems(deletedItems []models.DeletedHashes) error {
 	tx, err := hr.db.Begin()
 	if err != nil {
+		hr.logger.Error(err)
 		return err
 	}
 
@@ -85,6 +93,7 @@ func (hr HashRepository) UpdateDeletedItems(deletedItems []models.DeletedHashes)
 
 		if err != nil {
 			tx.Rollback()
+			hr.logger.Error(err)
 			return err
 		}
 	}

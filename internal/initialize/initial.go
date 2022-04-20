@@ -9,26 +9,26 @@ import (
 	"github.com/Kaborda-Irina/sha256sum/internal/repositories"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 	postrges "github.com/Kaborda-Irina/sha256sum/postgres"
-	"log"
+	"github.com/sirupsen/logrus"
 	"os"
 	"strings"
 )
 
-func Initialize(ctx context.Context, cfg config.Config, sig chan os.Signal, doHelp bool, dirPath string, algorithm string, checkHashSumFile string) {
+func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, sig chan os.Signal, doHelp bool, dirPath string, algorithm string, checkHashSumFile string) {
 
 	// Initialize PostgreSQL
-	log.Println("Starting postgres connection")
-	postgres, err := postrges.Initialize(cfg)
+	logger.Println("Starting postgres connection")
+	postgres, err := postrges.Initialize(cfg, logger)
 	if err != nil {
-		log.Println("Failed to connection to Postgres", err)
+		logger.Error("Failed to connection to Postgres", err)
 	}
-	log.Println("Postgres connection is successful")
+	logger.Println("Postgres connection is successful")
 
 	// Initialize repository
-	repository := repositories.NewAppRepository(postgres)
+	repository := repositories.NewAppRepository(postgres, logger)
 
 	// Initialize service
-	service := services.NewAppService(repository)
+	service := services.NewAppService(repository, logger)
 
 	jobs := make(chan string)
 	results := make(chan api.HashData)
@@ -49,7 +49,7 @@ func Initialize(ctx context.Context, cfg config.Config, sig chan os.Signal, doHe
 
 	//If the user has not entered a flag
 	default:
-		fmt.Println("use the -h flag on the command line to see all the flags in this app")
+		logger.Println("use the -h flag on the command line to see all the flags in this app")
 	}
 }
 

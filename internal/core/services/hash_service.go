@@ -6,18 +6,20 @@ import (
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/ports"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
-	"log"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
 type HashService struct {
 	hashRepository ports.IHashRepository
+	logger         *logrus.Logger
 }
 
 //NewHashService creates a new struct HashService
-func NewHashService(hashRepository ports.IHashRepository) *HashService {
+func NewHashService(hashRepository ports.IHashRepository, logger *logrus.Logger) *HashService {
 	return &HashService{
-		hashRepository,
+		hashRepository: hashRepository,
+		logger:         logger,
 	}
 }
 
@@ -28,6 +30,7 @@ func (hs HashService) SaveHashData(ctx context.Context, allHashData []api.HashDa
 
 	err := hs.hashRepository.SaveHashData(ctx, allHashData)
 	if err != nil {
+		hs.logger.Error(err)
 		return err
 	}
 	return nil
@@ -40,7 +43,7 @@ func (hs HashService) GetHashSum(ctx context.Context, dirFiles string, algorithm
 
 	hash, err := hs.hashRepository.GetHashSum(ctx, dirFiles, algorithm)
 	if err != nil {
-		log.Printf("hash service didn't get hash sum %s", err)
+		hs.logger.Error("hash service didn't get hash sum %s", err)
 		return nil, err
 	}
 
@@ -99,6 +102,7 @@ func (hs HashService) ChangedHashes(currentHashData []api.HashData, hashSumFromD
 	if len(deletedResult) > 0 {
 		err := hs.hashRepository.UpdateDeletedItems(deletedResult)
 		if err != nil {
+			hs.logger.Error(err)
 			return err
 		}
 	}
