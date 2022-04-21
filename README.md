@@ -1,10 +1,10 @@
-:octocat:# sha256sum - cli-app hash sum on Golang
+#:octocat: sha256sum - cli-app hash sum on Golang     
 sha256sum is a console application for getting the hash sum of files with different algorithms( **MD5, SHA256, SHA1, SHA224, SHA384, SHA512**).
 
 + we used standard libraries "crypto/sha1", "crypto/sha256","crypto/sha512"
 + you can see https://pkg.go.dev/crypto
 
-##:hammer: Installation
+##:hammer:Installation
 ```go
 import (
 	"context"
@@ -97,7 +97,8 @@ go run cmd/main.go -c ../name_dir/example.txt -a MD5
 go run cmd/main.go -a SHA512 -c ../name_dir -a SHA512
 ```
 ___________________________
-#### :notebook_with_decorative_cover: Godoc extracts and generates documentation for Go programs
+
+### :notebook_with_decorative_cover: Godoc extracts and generates documentation for Go programs
 ####Presents the documentation as a web page.
 ```go
 godoc -http=:6060/sha256sum
@@ -116,7 +117,7 @@ postgres:
   uri: "postgres://user:1234@postgres:5432/hashdb?sslmode=disable"
 ```
 
-:mag:#### Running tests
+###:mag: Running tests
 
 You need to go to the folder where the file is located *_test.go and run the following command:
 ```go
