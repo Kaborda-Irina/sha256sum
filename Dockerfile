@@ -1,7 +1,7 @@
 FROM golang:1.18-alpine AS buildenv
 WORKDIR /src
 ADD . /src
-
+RUN go mod download
 RUN GOOS=linux go build -o sha256sum cmd/feature_fifth/main.go
 
 RUN chmod +x sha256sum
