@@ -117,6 +117,7 @@ postgres:
 ```
 
 :mag:#### Running tests
+
 You need to go to the folder where the file is located *_test.go and run the following command:
 ```go
 go test -v
