@@ -115,3 +115,15 @@ go doc pkg/api.Result
 postgres:
   uri: "postgres://user:1234@postgres:5432/hashdb?sslmode=disable"
 ```
+
+:mag:#### Running tests
+You need to go to the folder where the file is located *_test.go and run the following command:
+```go
+go test -v
+```
+
+for example
+```go
+cd ../pkg/api
+go test -v
+```
