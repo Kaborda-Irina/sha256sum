@@ -99,7 +99,7 @@ func CreateHash(path string, alg string, logger *logrus.Logger) HashData {
 }
 
 // Result launching an infinite loop of receiving and outputting to Stdout the result and signal control
-func Result(ctx context.Context, results chan HashData, c chan os.Signal, logger *logrus.Logger) []HashData {
+func Result(ctx context.Context, results chan HashData, c chan os.Signal) []HashData {
 	var allHashData []HashData
 	for {
 		select {
@@ -117,7 +117,7 @@ func Result(ctx context.Context, results chan HashData, c chan os.Signal, logger
 	}
 }
 
-func ResultForCheck(ctx context.Context, results chan HashData, c chan os.Signal, logger *logrus.Logger) []HashData {
+func ResultForCheck(ctx context.Context, results chan HashData, c chan os.Signal) []HashData {
 	var allHashData []HashData
 	for {
 		select {
