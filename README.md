@@ -1,10 +1,10 @@
-#sha256sum - cli-app hash sum on Golang
+:octocat:# sha256sum - cli-app hash sum on Golang
 sha256sum is a console application for getting the hash sum of files with different algorithms( **MD5, SHA256, SHA1, SHA224, SHA384, SHA512**).
 
 + we used standard libraries "crypto/sha1", "crypto/sha256","crypto/sha512"
 + you can see https://pkg.go.dev/crypto
 
-##Installation
+##:hammer: Installation
 ```go
 import (
 	"context"
@@ -69,7 +69,7 @@ or
 go run cmd/feature_fifth/main.go -d ../dir/file_name.txt -a MD5
 ```
 ____
-##Usage
+##:house: Usage
 
 :one: if you need the hash sum of a single file or all files in a specific directory, use the **`flag -d`** (-d then directory path)
 ```
