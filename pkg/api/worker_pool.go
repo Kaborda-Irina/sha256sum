@@ -26,7 +26,7 @@ func Worker(ctx context.Context, wg *sync.WaitGroup, algorithm string, jobs <-ch
 	defer cancel()
 	defer wg.Done()
 	for j := range jobs {
-		hashSum := CreateHash(j, algorithm, logger)
-		results <- hashSum
+		results <- CreateHash(j, algorithm, logger)
+
 	}
 }

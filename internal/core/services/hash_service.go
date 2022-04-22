@@ -30,7 +30,7 @@ func (hs HashService) SaveHashData(ctx context.Context, allHashData []api.HashDa
 
 	err := hs.hashRepository.SaveHashData(ctx, allHashData)
 	if err != nil {
-		hs.logger.Error(err)
+		hs.logger.Error("error while saving data to db", err)
 		return err
 	}
 	return nil
@@ -43,7 +43,7 @@ func (hs HashService) GetHashSum(ctx context.Context, dirFiles string, algorithm
 
 	hash, err := hs.hashRepository.GetHashSum(ctx, dirFiles, algorithm)
 	if err != nil {
-		hs.logger.Error("hash service didn't get hash sum %s", err)
+		hs.logger.Error("hash service didn't get hash sum", err)
 		return nil, err
 	}
 

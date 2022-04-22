@@ -8,7 +8,6 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
-	"github.com/Kaborda-Irina/sha256sum/internal"
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -33,7 +32,7 @@ func SearchFilePath(ctx context.Context, commonPath string, jobs chan<- string, 
 	close(jobs)
 
 	if err != nil {
-		logger.Error(internal.ErrorDirPath, err)
+		logger.Error("not exist directory path", err)
 	}
 }
 
@@ -41,7 +40,7 @@ func SearchFilePath(ctx context.Context, commonPath string, jobs chan<- string, 
 func CreateHash(path string, alg string, logger *logrus.Logger) HashData {
 	f, err := os.Open(path)
 	if err != nil {
-		logger.Error(internal.ErrorFilePath, err)
+		logger.Error("not exist file path", err)
 	}
 	defer f.Close()
 
@@ -51,42 +50,42 @@ func CreateHash(path string, alg string, logger *logrus.Logger) HashData {
 	case "MD5":
 		h := md5.New()
 		if _, err := io.Copy(h, f); err != nil {
-			logger.Error(internal.ErrorHash, err)
+			logger.Error("error while copping file to hash", err)
 		}
 		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	case "SHA1":
 		h := sha1.New()
 		if _, err := io.Copy(h, f); err != nil {
-			logger.Error(internal.ErrorHash, err)
+			logger.Error("error while copping file to hash", err)
 		}
 		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	case "SHA224":
 		h := sha256.New224()
 		if _, err := io.Copy(h, f); err != nil {
-			logger.Error(internal.ErrorHash, err)
+			logger.Error("error while copping file to hash", err)
 		}
 		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	case "SHA384":
 		h := sha512.New384()
 		if _, err := io.Copy(h, f); err != nil {
-			logger.Error(internal.ErrorHash, err)
+			logger.Error("error while copping file to hash", err)
 		}
 		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	case "SHA512":
 		h := sha512.New()
 		if _, err := io.Copy(h, f); err != nil {
-			logger.Error(internal.ErrorHash, err)
+			logger.Error("error while copping file to hash", err)
 		}
 		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 
 	default:
 		h := sha256.New()
 		if _, err := io.Copy(h, f); err != nil {
-			logger.Error(internal.ErrorHash, err)
+			logger.Error("error while copping file to hash", err)
 		}
 		outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
 		alg = "SHA256"
@@ -117,6 +116,7 @@ func Result(ctx context.Context, results chan HashData, c chan os.Signal) []Hash
 	}
 }
 
+// ResultForCheck launching an infinite loop of receiving and return all hash sum
 func ResultForCheck(ctx context.Context, results chan HashData, c chan os.Signal) []HashData {
 	var allHashData []HashData
 	for {

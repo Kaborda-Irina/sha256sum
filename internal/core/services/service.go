@@ -28,7 +28,7 @@ func NewAppService(r *repositories.AppRepository, logger *logrus.Logger) *AppSer
 func (as *AppService) StartGetHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan api.HashData, sig chan os.Signal) {
 	go api.WorkerPool(ctx, countWorkers, algorithm, jobs, results, as.logger)
 	go api.SearchFilePath(ctx, flagName, jobs, as.logger)
-	allHashData := api.Result(ctx, results, sig, as.logger)
+	allHashData := api.Result(ctx, results, sig)
 	err := as.IHashService.SaveHashData(ctx, allHashData)
 	if err != nil {
 		as.logger.Error("Error save hash data to database ", err)
@@ -41,7 +41,7 @@ func (as *AppService) StartGetHashData(ctx context.Context, flagName string, alg
 func (as *AppService) StartCheckHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan api.HashData, sig chan os.Signal) {
 	go api.WorkerPool(ctx, countWorkers, algorithm, jobs, results, as.logger)
 	go api.SearchFilePath(ctx, flagName, jobs, as.logger)
-	allHashDataCurrent := api.ResultForCheck(ctx, results, sig, as.logger)
+	allHashDataCurrent := api.ResultForCheck(ctx, results, sig)
 	allHashDataFromDB, err := as.IHashService.GetHashSum(ctx, flagName, algorithm)
 	if err != nil {
 		as.logger.Error("Error getting hash data from database ", err)
