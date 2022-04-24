@@ -3,24 +3,59 @@ package services
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/ports"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
+	"github.com/Kaborda-Irina/sha256sum/pkg/hasher"
+
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type HashService struct {
 	hashRepository ports.IHashRepository
+	hasher         hasher.IHasher
+	alg            string
 	logger         *logrus.Logger
 }
 
 //NewHashService creates a new struct HashService
-func NewHashService(hashRepository ports.IHashRepository, logger *logrus.Logger) *HashService {
+func NewHashService(hashRepository ports.IHashRepository, alg string, logger *logrus.Logger) (*HashService, error) {
+	h, err := hasher.NewHashSum(alg)
+	if err != nil {
+		return nil, err
+	}
 	return &HashService{
 		hashRepository: hashRepository,
+		hasher:         h,
+		alg:            alg,
 		logger:         logger,
+	}, nil
+}
+
+//CreateHash creates a new object with a hash sum
+func (hs HashService) CreateHash(path string) api.HashData {
+	file, err := os.Open(path)
+	if err != nil {
+		hs.logger.Error("not exist file path", err)
+		return api.HashData{}
 	}
+	defer file.Close()
+
+	outputHashSum := api.HashData{}
+	res, err := hs.hasher.Hash(file)
+	if err != nil {
+		hs.logger.Error("not got hash sum", err)
+		return api.HashData{}
+	}
+	outputHashSum.Hash = res
+	outputHashSum.FileName = filepath.Base(path)
+	outputHashSum.FullFilePath = path
+	outputHashSum.Algorithm = hs.alg
+	return outputHashSum
 }
 
 //SaveHashData accesses the repository to save data to the database
@@ -30,20 +65,20 @@ func (hs HashService) SaveHashData(ctx context.Context, allHashData []api.HashDa
 
 	err := hs.hashRepository.SaveHashData(ctx, allHashData)
 	if err != nil {
-		hs.logger.Error(err)
+		hs.logger.Error("error while saving data to db", err)
 		return err
 	}
 	return nil
 }
 
 //GetHashSum accesses the repository to get data from the database
-func (hs HashService) GetHashSum(ctx context.Context, dirFiles string, algorithm string) ([]models.HashDataFromDB, error) {
+func (hs HashService) GetHashSum(ctx context.Context, dirFiles string) ([]models.HashDataFromDB, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	hash, err := hs.hashRepository.GetHashSum(ctx, dirFiles, algorithm)
+	hash, err := hs.hashRepository.GetHashSum(ctx, dirFiles, hs.alg)
 	if err != nil {
-		hs.logger.Error("hash service didn't get hash sum %s", err)
+		hs.logger.Error("hash service didn't get hash sum", err)
 		return nil, err
 	}
 
@@ -108,7 +143,7 @@ func (hs HashService) ChangedHashes(currentHashData []api.HashData, hashSumFromD
 	}
 
 	if count == 0 {
-		fmt.Println("Files didn't changed, added or deleted")
+		fmt.Println("Files have not been changed, added or removed")
 	}
 	return nil
 }

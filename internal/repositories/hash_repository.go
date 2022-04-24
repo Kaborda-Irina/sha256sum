@@ -3,11 +3,13 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 const nameTable = "hashFiles"
@@ -28,7 +30,7 @@ func NewHashRepository(db *sqlx.DB, logger *logrus.Logger) *HashRepository {
 func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.HashData) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	start := time.Now()
+
 	tx, err := hr.db.Begin()
 	if err != nil {
 		hr.logger.Error(err)
@@ -36,7 +38,8 @@ func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.Has
 	}
 	query := fmt.Sprintf(`
 		INSERT INTO hashFiles (fileName,fullFilePath,hashSum,algorithm) 
-		VALUES($1,$2,$3,$4) ON CONFLICT (fullFilePath,algorithm) DO UPDATE SET hashSum=EXCLUDED.hashSum`)
+		VALUES($1,$2,$3,$4) ON CONFLICT (fullFilePath,algorithm) 
+		DO UPDATE SET hashSum=EXCLUDED.hashSum`)
 
 	for _, hash := range allHashData {
 		_, err = tx.Exec(query, hash.FileName, hash.FullFilePath, hash.Hash, hash.Algorithm)
@@ -46,7 +49,7 @@ func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.Has
 			return err
 		}
 	}
-	fmt.Println(time.Since(start).Seconds())
+
 	return tx.Commit()
 
 }
@@ -86,7 +89,7 @@ func (hr HashRepository) UpdateDeletedItems(deletedItems []models.DeletedHashes)
 		return err
 	}
 
-	query := fmt.Sprintf(`UPDATE %s SET deleted = true WHERE fullFilePath=$1 AND algorithm=$2`, nameTable)
+	query := fmt.Sprintf("UPDATE %s SET deleted = true WHERE fullFilePath=$1 AND algorithm=$2", nameTable)
 
 	for _, item := range deletedItems {
 		_, err := tx.Exec(query, item.FilePath, item.Algorithm)
