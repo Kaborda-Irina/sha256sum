@@ -3,11 +3,13 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 const nameTable = "hashFiles"

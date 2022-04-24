@@ -59,7 +59,7 @@ $ cd path/to/install
 ###Сonnect database
 ```
 sudo docker-compose build
-sudo docker-compose up
+sudo docker-compose up -d
 ```
 
 ###Run code in console

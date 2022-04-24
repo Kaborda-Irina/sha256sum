@@ -2,14 +2,15 @@ package config
 
 import (
 	"bytes"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func InitLogger(config *LoggerConfig) *logrus.Logger {

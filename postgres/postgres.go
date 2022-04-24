@@ -2,6 +2,7 @@ package postrges
 
 import (
 	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"

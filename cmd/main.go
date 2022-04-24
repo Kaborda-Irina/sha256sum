@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
-	"github.com/Kaborda-Irina/sha256sum/internal/initialize"
 	"os"
 	"os/signal"
+
+	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
+	"github.com/Kaborda-Irina/sha256sum/internal/initialize"
 )
 
 var dirPath string

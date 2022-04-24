@@ -4,14 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+
 	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/services"
 	"github.com/Kaborda-Irina/sha256sum/internal/repositories"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 	postrges "github.com/Kaborda-Irina/sha256sum/postgres"
+
 	"github.com/sirupsen/logrus"
-	"os"
-	"strings"
 )
 
 func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, sig chan os.Signal, doHelp bool, dirPath string, algorithm string, checkHashSumFile string) {
@@ -28,11 +29,13 @@ func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, s
 	repository := repositories.NewAppRepository(postgres, logger)
 
 	// Initialize service
-	service := services.NewAppService(repository, logger)
+	service, err := services.NewAppService(repository, algorithm, logger)
+	if err != nil {
+		logger.Fatalf("can't init service: %s", err)
+	}
 
 	jobs := make(chan string)
 	results := make(chan api.HashData)
-	algorithm = strings.ToUpper(algorithm)
 
 	switch {
 	//Initialize custom -h flag
@@ -41,11 +44,11 @@ func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, s
 
 	//Initialize custom -d flag
 	case len(dirPath) > 0:
-		service.StartGetHashData(ctx, dirPath, algorithm, jobs, results, sig)
+		service.StartGetHashData(ctx, dirPath, jobs, results, sig)
 
 	//Initialize custom -c flag
 	case len(checkHashSumFile) > 0:
-		service.StartCheckHashData(ctx, checkHashSumFile, algorithm, jobs, results, sig)
+		service.StartCheckHashData(ctx, checkHashSumFile, jobs, results, sig)
 
 	//If the user has not entered a flag
 	default:
