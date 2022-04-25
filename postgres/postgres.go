@@ -12,7 +12,7 @@ import (
 func Initialize(cfg config.Config, logger *logrus.Logger) (*sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", cfg.URI)
 	if err != nil {
-		logger.Error("error open db: %v\n", err)
+		logger.Error("error open db: ", err)
 		return nil, err
 	}
 

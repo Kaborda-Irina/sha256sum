@@ -6,14 +6,15 @@ import (
 	"sync"
 
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
+
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 
 	"github.com/sirupsen/logrus"
 )
 
 type IAppService interface {
-	StartGetHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan api.HashData, sig chan os.Signal)
-	StartCheckHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan api.HashData, sig chan os.Signal)
+	StartGetHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan api.HashData, sig chan os.Signal) error
+	StartCheckHashData(ctx context.Context, flagName string, algorithm string, jobs chan string, results chan api.HashData, sig chan os.Signal) error
 }
 
 type IHashService interface {

@@ -1,4 +1,4 @@
-#:octocat: sha256sum - cli-app hash sum on Golang
+#sha256sum - cli-app hash sum on Golang
 sha256sum is a console application for getting the hash sum of files with different algorithms( **MD5, SHA256, SHA1, SHA224, SHA384, SHA512**).
 
 + we used standard libraries "crypto/sha1", "crypto/sha256","crypto/sha512"
@@ -106,14 +106,6 @@ go doc packge.function_name
 for example
 ```go
 go doc pkg/api.Result
-```
-
-###:heavy_exclamation_mark: If you want to launch the container "web", you need to change in config.yaml:
-**_localhost_** change **_postgres_**
-```yaml
-#Database credentials
-postgres:
-  uri: "postgres://user:1234@postgres:5432/hashdb?sslmode=disable"
 ```
 
 ###:mag: Running tests

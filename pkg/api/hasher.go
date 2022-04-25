@@ -12,7 +12,7 @@ import (
 
 // SearchFilePath searches for all files in the given directory
 func SearchFilePath(ctx context.Context, commonPath string, jobs chan<- string, logger *logrus.Logger) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	_, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	err := filepath.Walk(commonPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

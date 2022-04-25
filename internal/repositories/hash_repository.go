@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
+
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 
 	"github.com/jmoiron/sqlx"
@@ -28,7 +29,7 @@ func NewHashRepository(db *sqlx.DB, logger *logrus.Logger) *HashRepository {
 
 //SaveHashData iterates through all elements of the slice and triggers the save to database function
 func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.HashData) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	_, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	tx, err := hr.db.Begin()
@@ -44,7 +45,10 @@ func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.Has
 	for _, hash := range allHashData {
 		_, err = tx.Exec(query, hash.FileName, hash.FullFilePath, hash.Hash, hash.Algorithm)
 		if err != nil {
-			tx.Rollback()
+			err := tx.Rollback()
+			if err != nil {
+				return err
+			}
 			hr.logger.Error(err)
 			return err
 		}
@@ -56,7 +60,7 @@ func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.Has
 
 //GetHashSum retrieves data from the database using the path and algorithm
 func (hr HashRepository) GetHashSum(ctx context.Context, dirFiles string, algorithm string) ([]models.HashDataFromDB, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	_, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	var allHashDataFromDB []models.HashDataFromDB
@@ -95,7 +99,10 @@ func (hr HashRepository) UpdateDeletedItems(deletedItems []models.DeletedHashes)
 		_, err := tx.Exec(query, item.FilePath, item.Algorithm)
 
 		if err != nil {
-			tx.Rollback()
+			err := tx.Rollback()
+			if err != nil {
+				return err
+			}
 			hr.logger.Error(err)
 			return err
 		}

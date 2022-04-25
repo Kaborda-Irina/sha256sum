@@ -9,8 +9,9 @@ import (
 	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/services"
 	"github.com/Kaborda-Irina/sha256sum/internal/repositories"
-	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 	postrges "github.com/Kaborda-Irina/sha256sum/postgres"
+
+	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 
 	"github.com/sirupsen/logrus"
 )
@@ -41,15 +42,23 @@ func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, s
 	//Initialize custom -h flag
 	case doHelp:
 		customHelpFlag()
-
+		return
 	//Initialize custom -d flag
 	case len(dirPath) > 0:
-		service.StartGetHashData(ctx, dirPath, jobs, results, sig)
-
+		err := service.StartGetHashData(ctx, dirPath, jobs, results, sig)
+		if err != nil {
+			logger.Error("Error when starting to get hash data ", err)
+			return
+		}
+		return
 	//Initialize custom -c flag
 	case len(checkHashSumFile) > 0:
-		service.StartCheckHashData(ctx, checkHashSumFile, jobs, results, sig)
-
+		err := service.StartCheckHashData(ctx, checkHashSumFile, jobs, results, sig)
+		if err != nil {
+			logger.Error("Error when starting to check hash data ", err)
+			return
+		}
+		return
 	//If the user has not entered a flag
 	default:
 		logger.Println("use the -h flag on the command line to see all the flags in this app")
