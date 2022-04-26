@@ -7,6 +7,11 @@ services:
       - postgres
     ports:
       - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./h/h1:/src/sha256sum
+
   postgres:
     container_name: postgres_container
     image: postgres:latest

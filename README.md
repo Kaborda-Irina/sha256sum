@@ -1,10 +1,10 @@
-#sha256sum - cli-app hash sum on Golang
+# sha256sum - cli-app hash sum on Golang
 sha256sum is a console application for getting the hash sum of files with different algorithms( **MD5, SHA256, SHA1, SHA224, SHA384, SHA512**).
 
 + we used standard libraries "crypto/sha1", "crypto/sha256","crypto/sha512"
 + you can see https://pkg.go.dev/crypto
 
-##:hammer: Installation
+## :hammer: Installation
 ```go
 import (
 	"context"
@@ -51,25 +51,25 @@ func main() {
 	initialize.Initialize(ctx, cfg, logger, sig, doHelp, dirPath, algorithm, checkHashSumFile)
 }
 ```
-###Clone repository and install dependencies
+### Clone repository and install dependencies
 ```
 $ git clone https://github.com/Kaborda-Irina/sha256sum.git
 $ cd path/to/install
 ```
-###Сonnect database
+### Сonnect database
 ```
-sudo docker-compose build
-sudo docker-compose up -d
+ docker-compose build
+ docker-compose up -d
 ```
 
-###Run code in console
+### Run code in console
 ```
 go run cmd/main.go -d ../dir
 or
 go run cmd/feature_fifth/main.go -d ../dir/file_name.txt -a MD5
 ```
 ____
-##:house: Usage
+## :house: Usage
 
 :one: if you need the hash sum of a single file or all files in a specific directory, use the **`flag -d`** (-d then directory path)
 ```
@@ -98,7 +98,7 @@ go run cmd/main.go -a SHA512 -c ../name_dir -a SHA512
 ```
 ___________________________
 ### :notebook_with_decorative_cover: Godoc extracts and generates documentation for Go programs
-####Presents the documentation as a web page.
+#### Presents the documentation as a web page.
 ```go
 godoc -http=:6060/sha256sum
 go doc packge.function_name
@@ -108,7 +108,7 @@ for example
 go doc pkg/api.Result
 ```
 
-###:mag: Running tests
+### :mag: Running tests
 
 You need to go to the folder where the file is located *_test.go and run the following command:
 ```go
@@ -119,4 +119,13 @@ for example
 ```go
 cd ../pkg/api
 go test -v
+```
+
+
+
+```go
+ docker-compose build
+ docker-compose up -d
+ docker-compose run web -d ../app/logs/sha256sum.log
+
 ```
