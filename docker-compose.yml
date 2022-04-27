@@ -3,14 +3,14 @@ services:
   web:
     build: .
     container_name: gowebapp
+    env_file:
+      - .env
     depends_on:
       - postgres
     ports:
       - "9090:9090"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
-      - ./h/h1:/src/sha256sum
+      - ${VOLUME_PATH}:/local_path
 
   postgres:
     container_name: postgres_container
