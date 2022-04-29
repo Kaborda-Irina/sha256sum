@@ -16,3 +16,4 @@
 .idea
 postgres-data
 logs
+internal/core/services/bin

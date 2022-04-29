@@ -8,7 +8,7 @@ type IHasher interface {
 	Hash(file io.Reader) (string, error)
 }
 
-//NewHashSum takes a hashing algorithm as input and returns a hash sum with other data or an error
+// NewHashSum takes a hashing algorithm as input and returns a hash sum with other data or an error
 func NewHashSum(alg string) (h IHasher, err error) {
 	switch alg {
 	case "MD5":

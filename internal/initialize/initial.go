@@ -16,8 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, sig chan os.Signal, doHelp bool, dirPath string, algorithm string, checkHashSumFile string) {
-
+func Initialize(ctx context.Context, cfg *config.Config, logger *logrus.Logger, sig chan os.Signal, doHelp bool, dirPath, algorithm, checkHashSumFile string) {
 	// Initialize PostgreSQL
 	logger.Info("Starting postgres connection")
 	postgres, err := postrges.Initialize(cfg, logger)
@@ -39,11 +38,11 @@ func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, s
 	results := make(chan api.HashData)
 
 	switch {
-	//Initialize custom -h flag
+	// Initialize custom -h flag
 	case doHelp:
 		customHelpFlag()
 		return
-	//Initialize custom -d flag
+	// Initialize custom -d flag
 	case len(dirPath) > 0:
 		err := service.StartGetHashData(ctx, dirPath, jobs, results, sig)
 		if err != nil {
@@ -51,7 +50,7 @@ func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, s
 			return
 		}
 		return
-	//Initialize custom -c flag
+	// Initialize custom -c flag
 	case len(checkHashSumFile) > 0:
 		err := service.StartCheckHashData(ctx, checkHashSumFile, jobs, results, sig)
 		if err != nil {
@@ -59,7 +58,7 @@ func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, s
 			return
 		}
 		return
-	//If the user has not entered a flag
+	// If the user has not entered a flag
 	default:
 		logger.Println("use the -h flag on the command line to see all the flags in this app")
 	}

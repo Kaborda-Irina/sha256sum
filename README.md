@@ -175,3 +175,9 @@ for example
 cd ../pkg/api
 go test -v
 ```
+
+### :minidisc: How to create a `bin` for other platforms:
+`bin` will be located in internal/core/services/bin
+```
+bash build.sh
+```

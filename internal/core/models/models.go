@@ -1,7 +1,7 @@
 package models
 
 type HashDataFromDB struct {
-	Id           int
+	ID           int
 	Hash         string
 	FileName     string
 	FullFilePath string

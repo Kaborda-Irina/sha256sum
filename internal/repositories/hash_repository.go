@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Kaborda-Irina/sha256sum/internal/core/consts"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
@@ -27,9 +28,9 @@ func NewHashRepository(db *sqlx.DB, logger *logrus.Logger) *HashRepository {
 	}
 }
 
-//SaveHashData iterates through all elements of the slice and triggers the save to database function
+// SaveHashData iterates through all elements of the slice and triggers the save to database function
 func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.HashData) error {
-	_, cancel := context.WithTimeout(ctx, 5*time.Second)
+	_, cancel := context.WithTimeout(ctx, consts.TimeOut*time.Second)
 	defer cancel()
 
 	tx, err := hr.db.Begin()
@@ -55,12 +56,11 @@ func (hr HashRepository) SaveHashData(ctx context.Context, allHashData []api.Has
 	}
 
 	return tx.Commit()
-
 }
 
-//GetHashSum retrieves data from the database using the path and algorithm
-func (hr HashRepository) GetHashSum(ctx context.Context, dirFiles string, algorithm string) ([]models.HashDataFromDB, error) {
-	_, cancel := context.WithTimeout(ctx, 5*time.Second)
+// GetHashSum retrieves data from the database using the path and algorithm
+func (hr HashRepository) GetHashSum(ctx context.Context, dirFiles, algorithm string) ([]models.HashDataFromDB, error) {
+	_, cancel := context.WithTimeout(ctx, consts.TimeOut*time.Second)
 	defer cancel()
 
 	var allHashDataFromDB []models.HashDataFromDB
@@ -74,7 +74,7 @@ func (hr HashRepository) GetHashSum(ctx context.Context, dirFiles string, algori
 	}
 	for rows.Next() {
 		var hashDataFromDB models.HashDataFromDB
-		err := rows.Scan(&hashDataFromDB.Id, &hashDataFromDB.FileName, &hashDataFromDB.FullFilePath, &hashDataFromDB.Hash, &hashDataFromDB.Algorithm)
+		err := rows.Scan(&hashDataFromDB.ID, &hashDataFromDB.FileName, &hashDataFromDB.FullFilePath, &hashDataFromDB.Hash, &hashDataFromDB.Algorithm)
 		if err != nil {
 			hr.logger.Error(err)
 			return []models.HashDataFromDB{}, err
@@ -85,7 +85,7 @@ func (hr HashRepository) GetHashSum(ctx context.Context, dirFiles string, algori
 	return allHashDataFromDB, nil
 }
 
-//UpdateDeletedItems changes the deleted field to true in the database for each row if the file name has been deleted
+// UpdateDeletedItems changes the deleted field to true in the database for each row if the file name has been deleted
 func (hr HashRepository) UpdateDeletedItems(deletedItems []models.DeletedHashes) error {
 	tx, err := hr.db.Begin()
 	if err != nil {

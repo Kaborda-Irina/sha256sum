@@ -22,9 +22,8 @@ type LoggerConfig struct {
 	InfoLogFile string `mapstructure:"info_log_file"`
 }
 
-func LoadConfig() (config Config, logger *logrus.Logger, err error) {
-
-	//Initialize properties config
+func LoadConfig() (config *Config, logger *logrus.Logger, err error) {
+	// Initialize properties config
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
