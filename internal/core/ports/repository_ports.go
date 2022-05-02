@@ -8,6 +8,8 @@ import (
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 )
 
+//go:generate mockgen -source=repository_ports.go -destination=mocks/mock_repository.go
+
 type IAppRepository interface{}
 
 type IHashRepository interface {

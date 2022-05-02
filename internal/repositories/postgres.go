@@ -1,4 +1,4 @@
-package postrges
+package repositories
 
 import (
 	config "github.com/Kaborda-Irina/sha256sum/internal/configs"

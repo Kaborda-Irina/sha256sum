@@ -4,6 +4,8 @@ import (
 	"io"
 )
 
+//go:generate mockgen -source=hasher.go -destination=mocks/mock_hasher.go
+
 type IHasher interface {
 	Hash(file io.Reader) (string, error)
 }

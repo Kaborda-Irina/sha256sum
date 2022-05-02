@@ -9,8 +9,6 @@ import (
 	config "github.com/Kaborda-Irina/sha256sum/internal/configs"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/services"
 	"github.com/Kaborda-Irina/sha256sum/internal/repositories"
-	postrges "github.com/Kaborda-Irina/sha256sum/postgres"
-
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 
 	"github.com/sirupsen/logrus"
@@ -19,7 +17,7 @@ import (
 func Initialize(ctx context.Context, cfg *config.Config, logger *logrus.Logger, sig chan os.Signal, doHelp bool, dirPath, algorithm, checkHashSumFile string) {
 	// Initialize PostgreSQL
 	logger.Info("Starting postgres connection")
-	postgres, err := postrges.Initialize(cfg, logger)
+	postgres, err := repositories.Initialize(cfg, logger)
 	if err != nil {
 		logger.Error("Failed to connection to Postgres", err)
 	}
