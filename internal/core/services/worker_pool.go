@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Kaborda-Irina/sha256sum/internal/core/consts"
+
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 
 	"github.com/sirupsen/logrus"
@@ -12,7 +14,7 @@ import (
 
 // WorkerPool launches a certain number of workers for concurrent processing
 func (hs HashService) WorkerPool(ctx context.Context, countWorkers int, jobs chan string, results chan api.HashData, logger *logrus.Logger) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, consts.TimeOut*time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
 	for w := 1; w <= countWorkers; w++ {
@@ -25,7 +27,7 @@ func (hs HashService) WorkerPool(ctx context.Context, countWorkers int, jobs cha
 
 // Worker gets jobs from a pipe and writes the result to stdout and database
 func (hs HashService) Worker(ctx context.Context, wg *sync.WaitGroup, jobs <-chan string, results chan<- api.HashData, _ *logrus.Logger) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	_, cancel := context.WithTimeout(ctx, consts.TimeOut*time.Second)
 	defer cancel()
 	defer wg.Done()
 	for j := range jobs {

@@ -10,16 +10,14 @@ import (
 	"github.com/Kaborda-Irina/sha256sum/internal/core/services"
 	"github.com/Kaborda-Irina/sha256sum/internal/repositories"
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
-	postrges "github.com/Kaborda-Irina/sha256sum/postgres"
 
 	"github.com/sirupsen/logrus"
 )
 
-func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, sig chan os.Signal, doHelp bool, dirPath string, algorithm string, checkHashSumFile string) {
-
+func Initialize(ctx context.Context, cfg *config.Config, logger *logrus.Logger, sig chan os.Signal, doHelp bool, dirPath, algorithm, checkHashSumFile string) {
 	// Initialize PostgreSQL
 	logger.Info("Starting postgres connection")
-	postgres, err := postrges.Initialize(cfg, logger)
+	postgres, err := repositories.Initialize(cfg, logger)
 	if err != nil {
 		logger.Error("Failed to connection to Postgres", err)
 	}
@@ -38,19 +36,27 @@ func Initialize(ctx context.Context, cfg config.Config, logger *logrus.Logger, s
 	results := make(chan api.HashData)
 
 	switch {
-	//Initialize custom -h flag
+	// Initialize custom -h flag
 	case doHelp:
 		customHelpFlag()
-
-	//Initialize custom -d flag
+		return
+	// Initialize custom -d flag
 	case len(dirPath) > 0:
-		service.StartGetHashData(ctx, dirPath, jobs, results, sig)
-
-	//Initialize custom -c flag
+		err := service.StartGetHashData(ctx, dirPath, jobs, results, sig)
+		if err != nil {
+			logger.Error("Error when starting to get hash data ", err)
+			return
+		}
+		return
+	// Initialize custom -c flag
 	case len(checkHashSumFile) > 0:
-		service.StartCheckHashData(ctx, checkHashSumFile, jobs, results, sig)
-
-	//If the user has not entered a flag
+		err := service.StartCheckHashData(ctx, checkHashSumFile, jobs, results, sig)
+		if err != nil {
+			logger.Error("Error when starting to check hash data ", err)
+			return
+		}
+		return
+	// If the user has not entered a flag
 	default:
 		logger.Println("use the -h flag on the command line to see all the flags in this app")
 	}

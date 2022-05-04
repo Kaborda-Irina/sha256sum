@@ -25,7 +25,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	//Initialize config
+	// Initialize config
 	cfg, logger, err := config.LoadConfig()
 	if err != nil {
 		logger.Fatal("Error during loading from config file", err)

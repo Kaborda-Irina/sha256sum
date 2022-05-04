@@ -1,93 +1,50 @@
 package api
 
 import (
-	"crypto/md5"
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/sha512"
-	"encoding/hex"
-	"github.com/stretchr/testify/assert"
-	"io"
+	"context"
 	"os"
-	"path/filepath"
+	"os/signal"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateHash(t *testing.T) {
+func TestResult(t *testing.T) {
+	ctx := context.Background()
+	var results chan HashData
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
 
 	testTable := []struct {
-		name     string
-		path     string
-		alg      string
-		expected HashData
+		name        string
+		inputValues HashData
+		expected    []HashData
 	}{
-		{"one", "../test.txt", "SHA256", HashData{
-			Hash:         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			FileName:     "test.txt",
-			FullFilePath: "../test.txt",
-			Algorithm:    "SHA256",
-		}},
+		{
+			name: "exist data",
+			inputValues: HashData{
+				Hash:         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				FileName:     "new",
+				FullFilePath: "/local_path/gi/g/new",
+				Algorithm:    "SHA256",
+			},
+			expected: []HashData{{
+				Hash:         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				FileName:     "new",
+				FullFilePath: "/local_path/gi/g/new",
+				Algorithm:    "SHA256",
+			}}},
 	}
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
-			f, err := os.Open(testCase.path)
-			if err != nil {
-				assert.Error(t, err)
-			}
-			defer f.Close()
 
-			outputHashSum := HashData{}
+			go func(v HashData) {
+				results <- v
+			}(testCase.inputValues)
 
-			switch testCase.alg {
-			case "MD5":
-				h := md5.New()
-				if _, err := io.Copy(h, f); err != nil {
-					assert.Error(t, err)
-				}
-				outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
+			got := Result(ctx, results, sig)
 
-			case "SHA1":
-				h := sha1.New()
-				if _, err := io.Copy(h, f); err != nil {
-					assert.Error(t, err)
-				}
-				outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
-
-			case "SHA224":
-				h := sha256.New224()
-				if _, err := io.Copy(h, f); err != nil {
-					assert.Error(t, err)
-				}
-				outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
-
-			case "SHA384":
-				h := sha512.New384()
-				if _, err := io.Copy(h, f); err != nil {
-					assert.Error(t, err)
-				}
-				outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
-
-			case "SHA512":
-				h := sha512.New()
-				if _, err := io.Copy(h, f); err != nil {
-					assert.Error(t, err)
-				}
-				outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
-
-			default:
-				h := sha256.New()
-				if _, err := io.Copy(h, f); err != nil {
-					assert.Error(t, err)
-				}
-				outputHashSum.Hash = hex.EncodeToString(h.Sum(nil))
-				testCase.alg = "SHA256"
-			}
-
-			outputHashSum.FileName = filepath.Base(testCase.path)
-			outputHashSum.FullFilePath = testCase.path
-			outputHashSum.Algorithm = testCase.alg
-
-			assert.Equal(t, testCase.expected, outputHashSum)
+			assert.Equal(t, testCase.expected, got)
 		})
 	}
 }

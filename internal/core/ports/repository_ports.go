@@ -4,8 +4,11 @@ import (
 	"context"
 
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
+
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 )
+
+//go:generate mockgen -source=repository_ports.go -destination=mocks/mock_repository.go
 
 type IAppRepository interface{}
 

@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Kaborda-Irina/sha256sum/internal/core/consts"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/models"
 	"github.com/Kaborda-Irina/sha256sum/internal/core/ports"
+
 	"github.com/Kaborda-Irina/sha256sum/pkg/api"
 	"github.com/Kaborda-Irina/sha256sum/pkg/hasher"
 
@@ -22,7 +24,7 @@ type HashService struct {
 	logger         *logrus.Logger
 }
 
-//NewHashService creates a new struct HashService
+// NewHashService creates a new struct HashService
 func NewHashService(hashRepository ports.IHashRepository, alg string, logger *logrus.Logger) (*HashService, error) {
 	h, err := hasher.NewHashSum(alg)
 	if err != nil {
@@ -36,7 +38,7 @@ func NewHashService(hashRepository ports.IHashRepository, alg string, logger *lo
 	}, nil
 }
 
-//CreateHash creates a new object with a hash sum
+// CreateHash creates a new object with a hash sum
 func (hs HashService) CreateHash(path string) api.HashData {
 	file, err := os.Open(path)
 	if err != nil {
@@ -58,9 +60,9 @@ func (hs HashService) CreateHash(path string) api.HashData {
 	return outputHashSum
 }
 
-//SaveHashData accesses the repository to save data to the database
+// SaveHashData accesses the repository to save data to the database
 func (hs HashService) SaveHashData(ctx context.Context, allHashData []api.HashData) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, consts.TimeOut*time.Second)
 	defer cancel()
 
 	err := hs.hashRepository.SaveHashData(ctx, allHashData)
@@ -71,9 +73,9 @@ func (hs HashService) SaveHashData(ctx context.Context, allHashData []api.HashDa
 	return nil
 }
 
-//GetHashSum accesses the repository to get data from the database
+// GetHashSum accesses the repository to get data from the database
 func (hs HashService) GetHashSum(ctx context.Context, dirFiles string) ([]models.HashDataFromDB, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, consts.TimeOut*time.Second)
 	defer cancel()
 
 	hash, err := hs.hashRepository.GetHashSum(ctx, dirFiles, hs.alg)
@@ -85,7 +87,7 @@ func (hs HashService) GetHashSum(ctx context.Context, dirFiles string) ([]models
 	return hash, nil
 }
 
-//ChangedHashes checks if the current data has changed with the data stored in the database
+// ChangedHashes checks if the current data has changed with the data stored in the database
 func (hs HashService) ChangedHashes(currentHashData []api.HashData, hashSumFromDB []models.HashDataFromDB) error {
 	var deletedResult []models.DeletedHashes
 	var trigger bool
